@@ -2,11 +2,25 @@
 <html lang="fr">
 <head>
   <meta charset="UTF-8">
-  <title>Carte France - SP ou VICT</title>
+  <title>Carte France - SP / VICT</title>
   <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
   <style>
     html, body { margin:0; height:100%; }
     #map { width:100%; height:100%; }
+    /* Overlay choix rôle */
+    #role-popup {
+      position:absolute;
+      top:50%;
+      left:50%;
+      transform: translate(-50%, -50%);
+      background:white;
+      padding:20px;
+      border-radius:8px;
+      box-shadow:0 0 10px rgba(0,0,0,0.3);
+      z-index:1000;
+    }
+    #role-popup button { margin:5px; padding:10px 20px; font-weight:bold; }
+    /* Formulaire pour points rouges */
     #coord-form { 
       position:absolute; 
       top:10px; 
@@ -16,20 +30,27 @@
       z-index:1000; 
       border-radius:5px;
       box-shadow: 0 0 5px rgba(0,0,0,0.3);
-      display:none; /* caché par défaut */
     }
-    #coord-form input { width: 120px; margin-bottom:5px; }
+    #coord-form input { width: 100px; margin-bottom:5px; }
     #coord-form button { width: 100%; margin-bottom:5px; }
   </style>
 </head>
 <body>
   <div id="map"></div>
 
+  <!-- Overlay rôle -->
+  <div id="role-popup">
+    <p>Choisissez votre rôle :</p>
+    <button id="btn-sp">SP</button>
+    <button id="btn-vict">VICT</button>
+  </div>
+
+  <!-- Formulaire points rouges -->
   <div id="coord-form">
-    <label>Nom: <input type="text" id="name-input" placeholder="Ton nom"></label><br>
-    <button id="add-marker">Ajouter bonhomme rouge</button>
+    <label>Nom point rouge: <input type="text" id="red-name" placeholder="Ex: Point 1"></label><br>
     <label>Latitude: <input type="text" id="lat-input"></label><br>
-    <label>Longitude: <input type="text" id="lng-input"></label>
+    <label>Longitude: <input type="text" id="lng-input"></label><br>
+    <button id="add-red-marker">Ajouter bonhomme rouge</button>
   </div>
 
   <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
