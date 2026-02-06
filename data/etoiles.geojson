@@ -1,0 +1,17 @@
+{
+  "type": "FeatureCollection",
+  "features": [
+    {
+      "type": "Feature",
+      "properties": {
+        "titre": "Pont étroit",
+        "description": "Attention largeur limitée",
+        "image": "images/pont.webp"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [2.36, 48.84]
+      }
+    }
+  ]
+}
