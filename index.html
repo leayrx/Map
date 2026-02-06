@@ -2,7 +2,7 @@
 <html lang="fr">
 <head>
   <meta charset="UTF-8">
-  <title>Carte France - Ton point bleu</title>
+  <title>Carte France - SP ou VICT</title>
   <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
   <style>
     html, body { margin:0; height:100%; }
@@ -16,8 +16,9 @@
       z-index:1000; 
       border-radius:5px;
       box-shadow: 0 0 5px rgba(0,0,0,0.3);
+      display:none; /* caché par défaut */
     }
-    #coord-form input { width: 100px; margin-bottom:5px; }
+    #coord-form input { width: 120px; margin-bottom:5px; }
     #coord-form button { width: 100%; margin-bottom:5px; }
   </style>
 </head>
@@ -25,7 +26,7 @@
   <div id="map"></div>
 
   <div id="coord-form">
-    <label>Ton nom: <input type="text" id="name-input" placeholder="Ex: Alice"></label><br>
+    <label>Nom: <input type="text" id="name-input" placeholder="Ton nom"></label><br>
     <button id="add-marker">Ajouter bonhomme rouge</button>
     <label>Latitude: <input type="text" id="lat-input"></label><br>
     <label>Longitude: <input type="text" id="lng-input"></label>

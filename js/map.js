@@ -1,4 +1,4 @@
-// Carte centrée sur la France
+// Carte centrée sur France
 const map = L.map('map').setView([46.6, 2.2], 5);
 
 // OpenStreetMap
@@ -6,9 +6,18 @@ L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
     attribution: '© OpenStreetMap contributors',
 }).addTo(map);
 
-// Icones
+// Icons
 const blueIcon = L.icon({
     iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-blue.png',
+    shadowUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png',
+    iconSize: [25, 41],
+    iconAnchor: [12, 41],
+    popupAnchor: [1, -34],
+    shadowSize: [41, 41]
+});
+
+const greenIcon = L.icon({
+    iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-green.png',
     shadowUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png',
     iconSize: [25, 41],
     iconAnchor: [12, 41],
@@ -25,23 +34,51 @@ const redIcon = L.icon({
     shadowSize: [41, 41]
 });
 
-// Markers
+// Variables markers
+let userMarker = null;
 let personMarker = null;
-let myPositionMarker = null;
 
-// Géolocalisation pour point bleu
-map.locate({ setView: false, maxZoom: 16 });
-map.on('locationfound', e => {
-    const name = document.getElementById('name-input').value || "Moi";
-    if (myPositionMarker) map.removeLayer(myPositionMarker);
-
-    myPositionMarker = L.marker(e.latlng, { icon: blueIcon }).addTo(map)
-        .bindPopup(name).openPopup();
-});
-
-map.on('locationerror', e => {
-    alert("Impossible de récupérer votre position.");
-});
+// Afficher popup de choix rôle au chargement
+window.onload = function() {
+    setTimeout(() => {
+        if(confirm("Cliquez OK pour SP (bleu), Annuler pour VICT (vert)")) {
+            let role = confirm("Vous êtes SP ?") ? "SP" : "VICT";
+            if(role === "VICT") {
+                // Marker vert VICT
+                const lat = 46.6;  // Exemple : centre France
+                const lng = 2.2;
+                userMarker = L.marker([lat, lng], { icon: greenIcon })
+                    .addTo(map)
+                    .bindPopup("VICT").openPopup();
+            } else {
+                // SP : demander nom et géolocalisation
+                let name = "";
+                while(!name) {
+                    name = prompt("Entrez votre nom pour le point bleu :");
+                    if(!name) alert("Nom obligatoire !");
+                }
+                // Géolocalisation
+                map.locate({ setView: true, maxZoom: 14 });
+                map.on('locationfound', e => {
+                    if(userMarker) map.removeLayer(userMarker);
+                    userMarker = L.marker(e.latlng, { icon: blueIcon })
+                        .addTo(map)
+                        .bindPopup(name)
+                        .openPopup();
+                });
+                map.on('locationerror', e => {
+                    alert("Impossible de récupérer votre position, point au centre de la France.");
+                    const lat = 46.6;
+                    const lng = 2.2;
+                    userMarker = L.marker([lat, lng], { icon: blueIcon })
+                        .addTo(map)
+                        .bindPopup(name)
+                        .openPopup();
+                });
+            }
+        }
+    }, 100); // léger délai pour chargement complet
+};
 
 // Ajouter bonhomme rouge via formulaire
 document.getElementById('add-marker').addEventListener('click', () => {
@@ -58,7 +95,7 @@ document.getElementById('add-marker').addEventListener('click', () => {
     map.setView([lat, lng], 14);
 });
 
-// Ajouter bonhomme rouge par clic sur la carte
+// Ajouter bonhomme rouge par clic
 map.on('click', e => {
     if (personMarker) map.removeLayer(personMarker);
 
