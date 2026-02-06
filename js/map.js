@@ -34,7 +34,7 @@ const redIcon = L.icon({
 });
 
 // ==== Google Apps Script URL ====
-const webAppURL = "https://script.google.com/macros/s/AKfycbxZ_kUgJoKvykQtBfU_JVKZAY0jQBnXYnOF2k_gNM4/dev"; // remplace par ton lien Apps Script
+const webAppURL = "https://script.google.com/macros/s/AKfycbz1b1CQx6uwIZLjb_nnEhHtyooyScAw8ShnRRGTDiHyUQw58TOv7FKWFCfM57i2eTLD/exec"; // remplace par ton lien Apps Script
 
 // ==== Tableau pour tous les markers (local) ====
 const allMarkers = [];
