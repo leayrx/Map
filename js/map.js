@@ -1,175 +1,151 @@
-// ==== Carte centrée sur France ====
-const map = L.map('map').setView([46.6, 2.2], 5);
+// =====================
+// CONFIG
+// =====================
+const webAppURL = "https://script.google.com/macros/s/AKfycbytuq2_QeqdgaueYOIcg9TxhL_ydSYEzMNnqIUcEiDS9jYwN6r-aIGN_q4cBky4vTCP/exec"; // remplace par ton lien production
 
-L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-  attribution: '© OpenStreetMap contributors',
+// Carte centrée France
+const map = L.map("map").setView([46.6, 2.2], 6);
+
+// Fond OSM
+L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+  attribution: "© OpenStreetMap"
 }).addTo(map);
 
-// ==== Icônes ====
+// =====================
+// ICONES
+// =====================
 const blueIcon = L.icon({
-  iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-blue.png',
-  shadowUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png',
-  iconSize: [25,41], iconAnchor: [12,41], popupAnchor:[1,-34], shadowSize:[41,41]
+  iconUrl: "https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-blue.png",
+  shadowUrl: "https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png",
+  iconSize: [25,41],
+  iconAnchor: [12,41]
 });
 
 const greenIcon = L.icon({
-  iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-green.png',
-  shadowUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png',
-  iconSize: [25,41], iconAnchor: [12,41], popupAnchor:[1,-34], shadowSize:[41,41]
+  iconUrl: "https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-green.png",
+  shadowUrl: "https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png",
+  iconSize: [25,41],
+  iconAnchor: [12,41]
 });
 
 const redIcon = L.icon({
-  iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-red.png',
-  shadowUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png',
-  iconSize: [25,41], iconAnchor: [12,41], popupAnchor:[1,-34], shadowSize:[41,41]
+  iconUrl: "https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-red.png",
+  shadowUrl: "https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png",
+  iconSize: [25,41],
+  iconAnchor: [12,41]
 });
 
-// ==== URL Apps Script ====
-const webAppURL = "https://script.google.com/macros/s/AKfycbytuq2_QeqdgaueYOIcg9TxhL_ydSYEzMNnqIUcEiDS9jYwN6r-aIGN_q4cBky4vTCP/exec"; // remplace par ton lien production
-
-const allMarkers = [];
-
-// ==== Récupérer tous les points existants ====
-fetch(webAppURL)
-  .then(res => res.json())
-  .then(data => {
-    data.forEach(point => {
-      let icon = redIcon;
-      if(point.color==="blue") icon=blueIcon;
-      else if(point.color==="green") icon=greenIcon;
-
-      const marker = L.marker([parseFloat(point.lat), parseFloat(point.lng)], {icon})
-        .addTo(map)
-        .bindPopup(point.name);
-      allMarkers.push(marker);
-    });
-  });
-
-// ==== Envoyer position à Google Sheet ====
-function sendPosition(lat,lng,name,color){
+// =====================
+// GOOGLE SHEET
+// =====================
+function sendPosition(lat, lng, name, color) {
   fetch(webAppURL, {
-    method:"POST",
-    body: JSON.stringify({lat,lng,name,color})
-  })
-  .then(res => res.text())
-  .then(t => console.log("Réponse Apps Script :", t))
-  .catch(err => console.error("Erreur Apps Script :", err));
+    method: "POST",
+    body: JSON.stringify({ lat, lng, name, color })
+  });
 }
 
-// ==== Gestion popup rôle ====
-document.getElementById('btn-sp').addEventListener('click', () => {
-  let name = "";
-  while(!name){
-    name = prompt("Entrez votre nom pour le point bleu :");
-    if(!name) alert("Nom obligatoire !");
-  }
+function loadPositions() {
+  fetch(webAppURL)
+    .then(r => r.json())
+    .then(data => {
+      data.forEach(p => {
+        const icon =
+          p.color === "blue" ? blueIcon :
+          p.color === "green" ? greenIcon :
+          redIcon;
 
-  map.locate({setView:true, maxZoom:14});
-  map.on('locationfound', e => {
-    const marker = L.marker(e.latlng, {icon: blueIcon})
-      .addTo(map).bindPopup(name).openPopup();
-    allMarkers.push(marker);
-    sendPosition(e.latlng.lat, e.latlng.lng, name, "blue");
-  });
-  map.on('locationerror', e => {
-    alert("Impossible de récupérer votre position, point au centre de la France.");
-    const latlng = [46.6,2.2];
-    const marker = L.marker(latlng,{icon:blueIcon}).addTo(map).bindPopup(name).openPopup();
-    allMarkers.push(marker);
-    sendPosition(latlng[0], latlng[1], name, "blue");
-  });
+        L.marker([p.lat, p.lng], { icon })
+          .addTo(map)
+          .bindPopup(p.name);
+      });
+    });
+}
 
-  document.getElementById('role-popup').style.display='none';
-});
+loadPositions();
 
-document.getElementById('btn-vict').addEventListener('click', () => {
-  const name = "VICT";
-
-  map.locate({setView:true, maxZoom:14});
-  map.on('locationfound', e => {
-    const marker = L.marker(e.latlng, {icon: greenIcon})
-      .addTo(map).bindPopup(name).openPopup();
-    allMarkers.push(marker);
-    sendPosition(e.latlng.lat, e.latlng.lng, name, "green");
-  });
-  map.on('locationerror', e => {
-    alert("Impossible de récupérer votre position, point au centre de la France.");
-    const latlng = [46.6,2.2];
-    const marker = L.marker(latlng,{icon:greenIcon}).addTo(map).bindPopup(name).openPopup();
-    allMarkers.push(marker);
-    sendPosition(latlng[0], latlng[1], name, "green");
-  });
-
-  document.getElementById('role-popup').style.display='none';
-});
-
-// ==== Ajouter bonhomme rouge via formulaire ====
-document.getElementById('add-red-marker').addEventListener('click', () => {
-  const lat = parseFloat(document.getElementById('lat-input').value);
-  const lng = parseFloat(document.getElementById('lng-input').value);
-  const name = document.getElementById('red-name').value || "Bonhomme rouge";
-
-  if(isNaN(lat) || isNaN(lng)){ alert("Coordonnées invalides !"); return; }
-
-  const marker = L.marker([lat,lng], {icon: redIcon}).addTo(map).bindPopup(name).openPopup();
-  allMarkers.push(marker);
-
-  map.setView([lat,lng], 14);
-});
-
-// ==== Ajouter point rouge en cliquant sur la carte ====
-map.on('click', e => {
-  const name = prompt("Nom du point rouge :", "Bonhomme rouge");
+// =====================
+// ROLE SP / VICT
+// =====================
+document.getElementById("btn-sp").onclick = () => {
+  let name = prompt("Nom SP :");
   if(!name) return;
 
-  const marker = L.marker(e.latlng, {icon: redIcon}).addTo(map).bindPopup(name).openPopup();
-  allMarkers.push(marker);
+  map.locate();
+  map.once("locationfound", e => {
+    L.marker(e.latlng, { icon: blueIcon }).addTo(map).bindPopup(name).openPopup();
+    sendPosition(e.latlng.lat, e.latlng.lng, name, "blue");
+  });
 
-  document.getElementById('lat-input').value = e.latlng.lat.toFixed(6);
-  document.getElementById('lng-input').value = e.latlng.lng.toFixed(6);
-});
+  document.getElementById("role-popup").style.display = "none";
+};
 
-let gpxLayers = {}; // pour stocker les calques chargés
+document.getElementById("btn-vict").onclick = () => {
+  map.locate();
+  map.once("locationfound", e => {
+    L.marker(e.latlng, { icon: greenIcon }).addTo(map).bindPopup("VICT").openPopup();
+    sendPosition(e.latlng.lat, e.latlng.lng, "VICT", "green");
+  });
 
+  document.getElementById("role-popup").style.display = "none";
+};
+
+// =====================
+// POINT ROUGE MANUEL
+// =====================
+document.getElementById("add-red-marker").onclick = () => {
+  const lat = parseFloat(lat-input.value);
+  const lng = parseFloat(lng-input.value);
+  const name = red-name.value;
+
+  if(isNaN(lat) || isNaN(lng) || !name){
+    alert("Champs invalides");
+    return;
+  }
+
+  L.marker([lat,lng], { icon: redIcon }).addTo(map).bindPopup(name);
+  sendPosition(lat,lng,name,"red");
+};
+
+// =====================
+// GPX MULTI-CALQUES
+// =====================
+const gpxLayers = {};
 const selector = document.getElementById("layer");
 
-selector.addEventListener("change", function() {
-  const selectedOptions = Array.from(this.selectedOptions).map(opt => opt.value);
+selector.addEventListener("change", () => {
+  const selected = Array.from(selector.selectedOptions).map(o => o.value);
 
-  // Masquer tous les calques existants qui ne sont pas sélectionnés
-  Object.keys(gpxLayers).forEach(key => {
-    if(!selectedOptions.includes(key)){
-      map.removeLayer(gpxLayers[key]);
-    }
+  Object.keys(gpxLayers).forEach(k => {
+    if(!selected.includes(k)) map.removeLayer(gpxLayers[k]);
   });
 
-  // Charger ou ré-afficher les calques sélectionnés
-  selectedOptions.forEach(name => {
-    if(!gpxLayers[name]) {
-      const gpx = new L.GPX(`gpx/${name}.gpx`, {
+  selected.forEach(name => {
+    if(!gpxLayers[name]){
+      gpxLayers[name] = new L.GPX(`gpx/${name}.gpx`, {
         async: true,
-        polyline_options: { color: getColorForGPX(name), weight: 4, opacity: 0.7 }
-      }).on('loaded', function(e){
-        // ne pas re-centrer la carte à chaque calque pour multi-sélection
-        // map.fitBounds(e.target.getBounds());
+        polyline_options: {
+          color: getColor(name),
+          weight: 4,
+          opacity: 0.7
+        }
       }).addTo(map);
-      gpxLayers[name] = gpx;
     } else {
-      map.addLayer(gpxLayers[name]); // ré-affiche le calque déjà chargé
+      map.addLayer(gpxLayers[name]);
     }
   });
 });
 
-// Exemple : couleur différente selon le moyen
-function getColorForGPX(name){
+function getColor(name){
   const colors = {
-    Pieton: "blue",
-    VLI: "green",
-    VLTT: "orange",
+    PIETON: "orange",
+    VLI: "blue",
+    VLTT: "green",
     VSAV: "red",
     CTU: "purple",
-    FPT: "yellow",
-    CCF: "pink"
+    FPT: "black",
+    CCF: "brown"
   };
   return colors[name] || "gray";
 }
+
