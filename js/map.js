@@ -92,7 +92,7 @@ if (lat && lng) {
 
 let destinationMarker = null;
 
-// Clic sur le formulaire
+// Formulaire pour ajouter le marker
 document.getElementById('add-marker').addEventListener('click', () => {
   const lat = parseFloat(document.getElementById('lat-input').value);
   const lng = parseFloat(document.getElementById('lng-input').value);
@@ -102,29 +102,22 @@ document.getElementById('add-marker').addEventListener('click', () => {
     return;
   }
 
-  // Supprimer ancien marker
+  // Supprimer ancien marker si existant
   if (destinationMarker) map.removeLayer(destinationMarker);
 
-  destinationMarker = L.marker([lat, lng], {
-    icon: L.icon({
-      iconUrl: 'https://cdn-icons-png.flaticon.com/512/684/684908.png',
-      iconSize: [32, 32]
-    })
-  }).addTo(map).bindPopup("Destination").openPopup();
+  // Ajouter le nouveau marker
+  destinationMarker = L.marker([lat, lng]).addTo(map)
+    .bindPopup("Destination").openPopup();
 
   map.setView([lat, lng], 14);
 });
 
-// Optionnel : clic directement sur la carte pour placer le marker
+// Clic direct sur la carte pour ajouter le marker
 map.on('click', e => {
   if (destinationMarker) map.removeLayer(destinationMarker);
 
-  destinationMarker = L.marker(e.latlng, {
-    icon: L.icon({
-      iconUrl: 'https://cdn-icons-png.flaticon.com/512/684/684908.png',
-      iconSize: [32, 32]
-    })
-  }).addTo(map).bindPopup("Destination").openPopup();
+  destinationMarker = L.marker(e.latlng).addTo(map)
+    .bindPopup("Destination").openPopup();
 
   document.getElementById('lat-input').value = e.latlng.lat.toFixed(6);
   document.getElementById('lng-input').value = e.latlng.lng.toFixed(6);
