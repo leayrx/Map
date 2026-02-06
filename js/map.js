@@ -34,7 +34,7 @@ const redIcon = L.icon({
 });
 
 // ==== Google Apps Script URL ====
-const webAppURL = "TON_URL_APPS_SCRIPT_ICI"; // remplace par ton lien Apps Script
+const webAppURL = "AKfycbxZ_kUgJoKvykQtBfU_JVKZAY0jQBnXYnOF2k_gNM4"; // remplace par ton lien Apps Script
 
 // ==== Récupérer tous les points depuis Google Sheets ====
 fetch(webAppURL)
