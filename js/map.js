@@ -1,5 +1,5 @@
-// Initialiser la carte centrée sur Allassac
-const map = L.map('map').setView([45.25844, 1.477168], 13);
+// Initialiser la carte centrée sur Paris
+const map = L.map('map').setView([48.8566, 2.3522], 13);
 
 // Ajouter OpenStreetMap
 L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
