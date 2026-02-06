@@ -6,55 +6,110 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+
 <style>
-  body, html { margin:0; padding:0; height:100%; }
-  #map { width:100%; height:100%; }
-  #role-popup {
-    position:absolute; top:10px; left:50%; transform:translateX(-50%);
-    background:white; padding:10px; border-radius:5px; z-index:1000;
-    box-shadow:0 0 10px rgba(0,0,0,0.3);
-  }
-  #red-form {
-    position:absolute; bottom:10px; left:50%; transform:translateX(-50%);
-    background:white; padding:10px; border-radius:5px; z-index:1000;
-    box-shadow:0 0 10px rgba(0,0,0,0.3);
-  }
-  input { width: 100px; margin-right:5px; }
+html, body {
+  margin: 0;
+  padding: 0;
+  height: 100%;
+}
+
+#map {
+  width: 100%;
+  height: 100%;
+}
+
+/* CONTENEUR UI AU-DESSUS DE LA CARTE */
+#ui-container {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  z-index: 2000;
+  pointer-events: none;
+}
+
+#ui-container > div {
+  pointer-events: auto;
+}
+
+/* POPUP ROLE */
+#role-popup {
+  position: absolute;
+  top: 10px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: white;
+  padding: 10px;
+  border-radius: 5px;
+  box-shadow: 0 0 10px rgba(0,0,0,0.3);
+}
+
+/* FORMULAIRE POINT ROUGE */
+#red-form {
+  position: absolute;
+  bottom: 10px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: white;
+  padding: 10px;
+  border-radius: 5px;
+  box-shadow: 0 0 10px rgba(0,0,0,0.3);
+}
+
+#red-form input {
+  width: 90px;
+}
+
+/* MENU GPX */
+#layer-selector {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  background: white;
+  padding: 8px;
+  border-radius: 5px;
+  box-shadow: 0 0 10px rgba(0,0,0,0.3);
+}
 </style>
 </head>
+
 <body>
 
 <div id="map"></div>
 
-<div id="role-popup">
-  <p>Choisissez votre rôle :</p>
-  <button id="btn-sp">SP</button>
-  <button id="btn-vict">VICT</button>
+<div id="ui-container">
+
+  <div id="role-popup">
+    <strong>Choisissez votre rôle</strong><br><br>
+    <button id="btn-sp">SP</button>
+    <button id="btn-vict">VICT</button>
+  </div>
+
+  <div id="red-form">
+    <input id="lat-input" placeholder="Lat">
+    <input id="lng-input" placeholder="Lng">
+    <input id="red-name" placeholder="Nom">
+    <button id="add-red-marker">Ajouter</button>
+  </div>
+
+  <div id="layer-selector">
+    <strong>Moyens</strong><br>
+    <select id="layer" multiple size="7">
+      <option value="PIETON">Piéton</option>
+      <option value="VLI">VLI</option>
+      <option value="VLTT">VLTT</option>
+      <option value="VSAV">VSAV</option>
+      <option value="CTU">CTU</option>
+      <option value="FPT">FPT</option>
+      <option value="CCF">CCF</option>
+    </select>
+  </div>
+
 </div>
-
-<div id="red-form">
-  <input type="text" id="lat-input" placeholder="Latitude">
-  <input type="text" id="lng-input" placeholder="Longitude">
-  <input type="text" id="red-name" placeholder="Nom point rouge">
-  <button id="add-red-marker">Ajouter rouge</button>
-</div>
-
-
-<div id="layer-selector" style="position:absolute;top:10px;right:10px;z-index:1000;background:white;padding:5px;border-radius:5px;">
-  <label for="layer">Moyens de déplacement :</label>
-  <select id="layer" multiple size="7">
-    <option value="PIETON">Pieton</option>
-    <option value="VLI">VLI</option>
-    <option value="VLTT">VLTT</option>
-    <option value="VSAV">VSAV</option>
-    <option value="CTU">CTU</option>
-    <option value="FPT">FPT</option>
-    <option value="CCF">CCF</option>
-  </select>
-</div>
-
 
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet-gpx/1.7.0/gpx.min.js"></script>
 <script src="js/map.js"></script>
 
 </body>
