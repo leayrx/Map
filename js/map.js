@@ -1,22 +1,12 @@
-// Initialiser la carte centrée sur la France
+// Carte centrée sur la France
 const map = L.map('map').setView([46.6, 2.2], 5);
 
-// Ajouter OpenStreetMap
+// OpenStreetMap
 L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
     attribution: '© OpenStreetMap contributors',
 }).addTo(map);
 
-// Marker rouge pour position manuelle
-const redIcon = L.icon({
-    iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-red.png',
-    shadowUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png',
-    iconSize: [25, 41],
-    iconAnchor: [12, 41],
-    popupAnchor: [1, -34],
-    shadowSize: [41, 41]
-});
-
-// Marker bleu par défaut pour position réelle
+// Icones
 const blueIcon = L.icon({
     iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-blue.png',
     shadowUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png',
@@ -26,27 +16,34 @@ const blueIcon = L.icon({
     shadowSize: [41, 41]
 });
 
-// Marker pour position manuelle
-let personMarker = null;
+const redIcon = L.icon({
+    iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-red.png',
+    shadowUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png',
+    iconSize: [25, 41],
+    iconAnchor: [12, 41],
+    popupAnchor: [1, -34],
+    shadowSize: [41, 41]
+});
 
-// Marker pour position réelle
+// Markers
+let personMarker = null;
 let myPositionMarker = null;
 
-// Géolocalisation
+// Géolocalisation pour point bleu
 map.locate({ setView: false, maxZoom: 16 });
-
 map.on('locationfound', e => {
+    const name = document.getElementById('name-input').value || "Moi";
     if (myPositionMarker) map.removeLayer(myPositionMarker);
 
     myPositionMarker = L.marker(e.latlng, { icon: blueIcon }).addTo(map)
-        .bindPopup("Vous êtes ici").openPopup();
+        .bindPopup(name).openPopup();
 });
 
 map.on('locationerror', e => {
     alert("Impossible de récupérer votre position.");
 });
 
-// Formulaire : ajouter marker rouge
+// Ajouter bonhomme rouge via formulaire
 document.getElementById('add-marker').addEventListener('click', () => {
     const lat = parseFloat(document.getElementById('lat-input').value);
     const lng = parseFloat(document.getElementById('lng-input').value);
@@ -61,7 +58,7 @@ document.getElementById('add-marker').addEventListener('click', () => {
     map.setView([lat, lng], 14);
 });
 
-// Clic sur la carte pour ajouter marker rouge
+// Ajouter bonhomme rouge par clic sur la carte
 map.on('click', e => {
     if (personMarker) map.removeLayer(personMarker);
 
