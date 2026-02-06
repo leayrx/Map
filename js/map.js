@@ -1,33 +1,13 @@
-// Initialiser la carte centrée sur Paris
-const map = L.map('map').setView([48.8566, 2.3522], 13);
+// Initialiser la carte centrée sur Allassac
+const map = L.map('map').setView([45.25844, 1.477168], 13);
 
 // Ajouter OpenStreetMap
 L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
   attribution: '© OpenStreetMap contributors',
 }).addTo(map);
 
-// Géolocalisation de l'utilisateur
-map.locate({ setView: true, maxZoom: 16, enableHighAccuracy: true });
-
-map.on('locationfound', e => {
-  L.marker(e.latlng)
-    .addTo(map)
-    .bindPopup("Votre position")
-    .openPopup();
-
-  L.circle(e.latlng, {
-    radius: e.accuracy,
-    color: 'blue',
-    fillOpacity: 0.1
-  }).addTo(map);
-});
-
-map.on('locationerror', e => {
-  console.log("Impossible de récupérer la position : ", e.message);
-});
-
-// Marker de destination
-let destinationMarker = null;
+// Marker “bonhomme”
+let personMarker = null;
 
 // Formulaire : ajouter marker
 document.getElementById('add-marker').addEventListener('click', () => {
@@ -40,21 +20,21 @@ document.getElementById('add-marker').addEventListener('click', () => {
   }
 
   // Supprimer l'ancien marker si existant
-  if (destinationMarker) map.removeLayer(destinationMarker);
+  if (personMarker) map.removeLayer(personMarker);
 
-  // Ajouter nouveau marker
-  destinationMarker = L.marker([lat, lng]).addTo(map)
-    .bindPopup("Destination").openPopup();
+  // Ajouter nouveau marker “bonhomme”
+  personMarker = L.marker([lat, lng]).addTo(map)
+    .bindPopup("Bonhomme").openPopup();
 
   map.setView([lat, lng], 14);
 });
 
-// Clic sur la carte pour ajouter marker
+// Clic sur la carte pour placer le marker “bonhomme”
 map.on('click', e => {
-  if (destinationMarker) map.removeLayer(destinationMarker);
+  if (personMarker) map.removeLayer(personMarker);
 
-  destinationMarker = L.marker(e.latlng).addTo(map)
-    .bindPopup("Destination").openPopup();
+  personMarker = L.marker(e.latlng).addTo(map)
+    .bindPopup("Bonhomme").openPopup();
 
   document.getElementById('lat-input').value = e.latlng.lat.toFixed(6);
   document.getElementById('lng-input').value = e.latlng.lng.toFixed(6);
