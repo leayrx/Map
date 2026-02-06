@@ -1,98 +1,35 @@
-const map = L.map('map').setView([46.8, 2.5], 6);
+// Initialiser la carte centrée sur Paris
+const map = L.map('map').setView([48.8566, 2.3522], 13);
 
-// Fond de carte OpenStreetMap (gratuit, sans clé)
+// Ajouter OpenStreetMap
 L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-  attribution: '© OpenStreetMap'
+  attribution: '© OpenStreetMap contributors',
 }).addTo(map);
 
-// Géolocalisation utilisateur
-map.locate({ setView: true, maxZoom: 15 });
+// Géolocalisation de l'utilisateur
+map.locate({ setView: true, maxZoom: 16, enableHighAccuracy: true });
 
 map.on('locationfound', e => {
   L.marker(e.latlng)
     .addTo(map)
     .bindPopup("Votre position")
     .openPopup();
+
+  L.circle(e.latlng, {
+    radius: e.accuracy,
+    color: 'blue',
+    fillOpacity: 0.1
+  }).addTo(map);
 });
 
-map.on('locationerror', () => {
-  alert("Géolocalisation refusée");
+map.on('locationerror', e => {
+  console.log("Impossible de récupérer la position : ", e.message);
 });
 
-
-/***************************/
-//affichage des calques pour véhicules
-const couches = {};
-
-fetch('data/poids_lourds.geojson')
-  .then(r => r.json())
-  .then(data => {
-    couches["Poids lourds"] = L.geoJSON(data, {
-      style: { color: 'red' }
-    }).addTo(map);
-  });
-
-fetch('data/vehicules_legers.geojson')
-  .then(r => r.json())
-  .then(data => {
-    couches["Véhicules légers"] = L.geoJSON(data, {
-      style: { color: 'green' }
-    }).addTo(map);
-  });
-
-// Contrôle des calques
-L.control.layers(null, couches).addTo(map);
-
-
-
-/***************************/
-//affichage des images et etoiles pour informations
-fetch('data/etoiles.geojson')
-  .then(r => r.json())
-  .then(data => {
-    const etoiles = L.geoJSON(data, {
-      pointToLayer: (feature, latlng) => {
-        return L.marker(latlng, {
-          icon: L.icon({
-            iconUrl: 'https://cdn-icons-png.flaticon.com/512/616/616490.png',
-            iconSize: [24, 24]
-          })
-        });
-      },
-      onEachFeature: (feature, layer) => {
-        layer.bindPopup(`
-          <strong>${feature.properties.titre}</strong><br>
-          ${feature.properties.description}<br>
-          <img src="${feature.properties.image}" width="200">
-        `);
-      }
-    }).addTo(map);
-
-    couches["Notes"] = etoiles;
-  });
-
-
-
-  /***************************/
-//pour le lien
-  const params = new URLSearchParams(window.location.search);
-const lat = params.get('lat');
-const lng = params.get('lng');
-
-if (lat && lng) {
-  L.marker([lat, lng])
-    .addTo(map)
-    .bindPopup("Position partagée")
-    .openPopup();
-}
-
-
-  /***************************/
-//Placement du marker en fonction des coordonnés renseignés
-
+// Marker de destination
 let destinationMarker = null;
 
-// Formulaire pour ajouter le marker
+// Formulaire : ajouter marker
 document.getElementById('add-marker').addEventListener('click', () => {
   const lat = parseFloat(document.getElementById('lat-input').value);
   const lng = parseFloat(document.getElementById('lng-input').value);
@@ -102,17 +39,17 @@ document.getElementById('add-marker').addEventListener('click', () => {
     return;
   }
 
-  // Supprimer ancien marker si existant
+  // Supprimer l'ancien marker si existant
   if (destinationMarker) map.removeLayer(destinationMarker);
 
-  // Ajouter le nouveau marker
+  // Ajouter nouveau marker
   destinationMarker = L.marker([lat, lng]).addTo(map)
     .bindPopup("Destination").openPopup();
 
   map.setView([lat, lng], 14);
 });
 
-// Clic direct sur la carte pour ajouter le marker
+// Clic sur la carte pour ajouter marker
 map.on('click', e => {
   if (destinationMarker) map.removeLayer(destinationMarker);
 
