@@ -6,7 +6,7 @@ L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
     attribution: '© OpenStreetMap contributors',
 }).addTo(map);
 
-// Marker rouge type Leaflet
+// Marker rouge type Leaflet pour "bonhomme"
 const redIcon = L.icon({
     iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-red.png',
     shadowUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png',
@@ -16,10 +16,27 @@ const redIcon = L.icon({
     shadowSize: [41, 41]
 });
 
-// Marker “bonhomme rouge”
+// Marker de destination “bonhomme rouge”
 let personMarker = null;
 
-// Formulaire : ajouter marker
+// Marker de position réelle
+let myPositionMarker = null;
+
+// Récupérer la position de l'utilisateur
+map.locate({ setView: true, maxZoom: 16 });
+
+map.on('locationfound', e => {
+    if (myPositionMarker) map.removeLayer(myPositionMarker);
+
+    myPositionMarker = L.marker(e.latlng).addTo(map)
+        .bindPopup("Vous êtes ici").openPopup();
+});
+
+map.on('locationerror', e => {
+    alert("Impossible de récupérer votre position.");
+});
+
+// Formulaire : ajouter marker rouge
 document.getElementById('add-marker').addEventListener('click', () => {
     const lat = parseFloat(document.getElementById('lat-input').value);
     const lng = parseFloat(document.getElementById('lng-input').value);
@@ -37,7 +54,7 @@ document.getElementById('add-marker').addEventListener('click', () => {
     map.setView([lat, lng], 14);
 });
 
-// Clic sur la carte pour ajouter marker
+// Clic sur la carte pour ajouter marker rouge
 map.on('click', e => {
     if (personMarker) map.removeLayer(personMarker);
 
