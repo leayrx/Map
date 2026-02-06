@@ -2,16 +2,20 @@
 <html lang="fr">
 <head>
   <meta charset="UTF-8">
-  <title>Carte avec bonhomme</title>
+  <title>Carte avec bonhomme rouge</title>
   <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
   <style>
     html, body { margin:0; height:100%; }
     #map { width:100%; height:100%; }
     #coord-form { 
       position:absolute; 
-      top:10px; left:10px; 
-      background:white; padding:10px; 
+      top:10px; 
+      left:10px; 
+      background:white; 
+      padding:10px; 
       z-index:1000; 
+      border-radius:5px;
+      box-shadow: 0 0 5px rgba(0,0,0,0.3);
     }
     #coord-form input { width: 100px; }
   </style>
@@ -19,11 +23,10 @@
 <body>
   <div id="map"></div>
 
-  <!-- Formulaire pour saisir coordonnées -->
   <div id="coord-form">
     <label>Latitude: <input type="text" id="lat-input"></label><br>
     <label>Longitude: <input type="text" id="lng-input"></label><br>
-    <button id="add-marker">Ajouter bonhomme</button>
+    <button id="add-marker">Ajouter bonhomme rouge</button>
   </div>
 
   <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
