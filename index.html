@@ -39,6 +39,21 @@
   <button id="add-red-marker">Ajouter rouge</button>
 </div>
 
+
+<div id="layer-selector" style="position:absolute;top:10px;right:10px;z-index:1000;background:white;padding:5px;border-radius:5px;">
+  <label for="layer">Moyens de déplacement :</label>
+  <select id="layer" multiple size="7">
+    <option value="PIETON">Pieton</option>
+    <option value="VLI">VLI</option>
+    <option value="VLTT">VLTT</option>
+    <option value="VSAV">VSAV</option>
+    <option value="CTU">CTU</option>
+    <option value="FPT">FPT</option>
+    <option value="CCF">CCF</option>
+  </select>
+</div>
+
+
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script src="js/map.js"></script>
 

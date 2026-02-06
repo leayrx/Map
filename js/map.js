@@ -128,3 +128,48 @@ map.on('click', e => {
   document.getElementById('lat-input').value = e.latlng.lat.toFixed(6);
   document.getElementById('lng-input').value = e.latlng.lng.toFixed(6);
 });
+
+let gpxLayers = {}; // pour stocker les calques chargés
+
+const selector = document.getElementById("layer");
+
+selector.addEventListener("change", function() {
+  const selectedOptions = Array.from(this.selectedOptions).map(opt => opt.value);
+
+  // Masquer tous les calques existants qui ne sont pas sélectionnés
+  Object.keys(gpxLayers).forEach(key => {
+    if(!selectedOptions.includes(key)){
+      map.removeLayer(gpxLayers[key]);
+    }
+  });
+
+  // Charger ou ré-afficher les calques sélectionnés
+  selectedOptions.forEach(name => {
+    if(!gpxLayers[name]) {
+      const gpx = new L.GPX(`gpx/${name}.gpx`, {
+        async: true,
+        polyline_options: { color: getColorForGPX(name), weight: 4, opacity: 0.7 }
+      }).on('loaded', function(e){
+        // ne pas re-centrer la carte à chaque calque pour multi-sélection
+        // map.fitBounds(e.target.getBounds());
+      }).addTo(map);
+      gpxLayers[name] = gpx;
+    } else {
+      map.addLayer(gpxLayers[name]); // ré-affiche le calque déjà chargé
+    }
+  });
+});
+
+// Exemple : couleur différente selon le moyen
+function getColorForGPX(name){
+  const colors = {
+    Pieton: "blue",
+    VLI: "green",
+    VLTT: "orange",
+    VSAV: "red",
+    CTU: "purple",
+    FPT: "yellow",
+    CCF: "pink"
+  };
+  return colors[name] || "gray";
+}
