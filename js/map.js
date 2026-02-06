@@ -1,12 +1,11 @@
-// Carte centrée sur France
+// ==== Carte centrée sur France ====
 const map = L.map('map').setView([46.6, 2.2], 5);
 
-// OpenStreetMap
 L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
   attribution: '© OpenStreetMap contributors',
 }).addTo(map);
 
-// Icons
+// ==== Icônes ====
 const blueIcon = L.icon({
   iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-blue.png',
   shadowUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png',
@@ -34,76 +33,98 @@ const redIcon = L.icon({
   shadowSize: [41,41]
 });
 
-// Tableau pour stocker tous les markers
-const allMarkers = [];
+// ==== Google Apps Script URL ====
+const webAppURL = "TON_URL_APPS_SCRIPT_ICI"; // remplace par ton lien Apps Script
 
-// Gérer choix rôle
+// ==== Récupérer tous les points depuis Google Sheets ====
+fetch(webAppURL)
+  .then(res => res.json())
+  .then(data => {
+    data.forEach(point => {
+      let icon = redIcon;
+      if(point.color==="blue") icon=blueIcon;
+      else if(point.color==="green") icon=greenIcon;
+
+      L.marker([parseFloat(point.lat), parseFloat(point.lng)], {icon})
+        .addTo(map)
+        .bindPopup(point.name);
+    });
+  });
+
+// ==== Fonction pour envoyer position à Google Sheets ====
+function sendPosition(lat, lng, name, color){
+  fetch(webAppURL, {
+    method: "POST",
+    body: JSON.stringify({lat, lng, name, color})
+  });
+}
+
+// ==== Gestion popup rôle ====
 document.getElementById('btn-sp').addEventListener('click', () => {
   let name = "";
-  while(!name) {
+  while(!name){
     name = prompt("Entrez votre nom pour le point bleu :");
     if(!name) alert("Nom obligatoire !");
   }
 
-  map.locate({ setView: true, maxZoom: 14 });
+  // Récupérer position réelle
+  map.locate({setView:true, maxZoom:14});
   map.on('locationfound', e => {
-    const marker = L.marker(e.latlng, { icon: blueIcon })
+    L.marker(e.latlng, {icon: blueIcon})
       .addTo(map)
       .bindPopup(name)
       .openPopup();
-    allMarkers.push(marker);
+    sendPosition(e.latlng.lat, e.latlng.lng, name, "blue");
   });
   map.on('locationerror', e => {
     alert("Impossible de récupérer votre position, point au centre de la France.");
-    const marker = L.marker([46.6,2.2], { icon: blueIcon })
+    const latlng = [46.6, 2.2];
+    L.marker(latlng, {icon: blueIcon})
       .addTo(map)
       .bindPopup(name)
       .openPopup();
-    allMarkers.push(marker);
+    sendPosition(latlng[0], latlng[1], name, "blue");
   });
 
   document.getElementById('role-popup').style.display = 'none';
 });
 
 document.getElementById('btn-vict').addEventListener('click', () => {
-  const lat = 46.6; // centre France
-  const lng = 2.2;
-  const marker = L.marker([lat,lng], { icon: greenIcon })
+  const latlng = [46.6, 2.2]; // centre France par défaut
+  L.marker(latlng, {icon: greenIcon})
     .addTo(map)
     .bindPopup("VICT")
     .openPopup();
-  allMarkers.push(marker);
+  sendPosition(latlng[0], latlng[1], "VICT", "green");
 
   document.getElementById('role-popup').style.display = 'none';
 });
 
-// Ajouter bonhomme rouge via formulaire
+// ==== Ajouter bonhomme rouge via formulaire ====
 document.getElementById('add-red-marker').addEventListener('click', () => {
   const lat = parseFloat(document.getElementById('lat-input').value);
   const lng = parseFloat(document.getElementById('lng-input').value);
   const name = document.getElementById('red-name').value || "Bonhomme rouge";
 
-  if(isNaN(lat) || isNaN(lng)) { alert("Coordonnées invalides !"); return; }
+  if(isNaN(lat) || isNaN(lng)){ alert("Coordonnées invalides !"); return; }
 
-  const marker = L.marker([lat,lng], { icon: redIcon })
+  L.marker([lat,lng], {icon: redIcon})
     .addTo(map)
     .bindPopup(name)
     .openPopup();
-  allMarkers.push(marker);
 
   map.setView([lat,lng], 14);
 });
 
-// Ajouter bonhomme rouge par clic
+// ==== Ajouter point rouge en cliquant sur la carte ====
 map.on('click', e => {
   const name = prompt("Nom du point rouge :", "Bonhomme rouge");
   if(!name) return;
 
-  const marker = L.marker(e.latlng, { icon: redIcon })
+  L.marker(e.latlng, {icon: redIcon})
     .addTo(map)
     .bindPopup(name)
     .openPopup();
-  allMarkers.push(marker);
 
   document.getElementById('lat-input').value = e.latlng.lat.toFixed(6);
   document.getElementById('lng-input').value = e.latlng.lng.toFixed(6);
