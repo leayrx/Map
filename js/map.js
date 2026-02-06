@@ -34,7 +34,10 @@ const redIcon = L.icon({
 });
 
 // ==== Google Apps Script URL ====
-const webAppURL = "AKfycbxGDu2MJPxGx-Va5RIuwWrOsILKYBIugz8D0V2OBng1buUSHg38gH6hyl_Yg3YwZaoZ"; // remplace par ton lien Apps Script
+const webAppURL = "TON_URL_APPS_SCRIPT_ICI"; // remplace par ton lien Apps Script
+
+// ==== Tableau pour tous les markers (local) ====
+const allMarkers = [];
 
 // ==== Récupérer tous les points depuis Google Sheets ====
 fetch(webAppURL)
@@ -45,9 +48,10 @@ fetch(webAppURL)
       if(point.color==="blue") icon=blueIcon;
       else if(point.color==="green") icon=greenIcon;
 
-      L.marker([parseFloat(point.lat), parseFloat(point.lng)], {icon})
+      const marker = L.marker([parseFloat(point.lat), parseFloat(point.lng)], {icon})
         .addTo(map)
         .bindPopup(point.name);
+      allMarkers.push(marker);
     });
   });
 
@@ -70,19 +74,21 @@ document.getElementById('btn-sp').addEventListener('click', () => {
   // Récupérer position réelle
   map.locate({setView:true, maxZoom:14});
   map.on('locationfound', e => {
-    L.marker(e.latlng, {icon: blueIcon})
+    const marker = L.marker(e.latlng, {icon: blueIcon})
       .addTo(map)
       .bindPopup(name)
       .openPopup();
+    allMarkers.push(marker);
     sendPosition(e.latlng.lat, e.latlng.lng, name, "blue");
   });
   map.on('locationerror', e => {
     alert("Impossible de récupérer votre position, point au centre de la France.");
     const latlng = [46.6, 2.2];
-    L.marker(latlng, {icon: blueIcon})
+    const marker = L.marker(latlng, {icon: blueIcon})
       .addTo(map)
       .bindPopup(name)
       .openPopup();
+    allMarkers.push(marker);
     sendPosition(latlng[0], latlng[1], name, "blue");
   });
 
@@ -90,12 +96,28 @@ document.getElementById('btn-sp').addEventListener('click', () => {
 });
 
 document.getElementById('btn-vict').addEventListener('click', () => {
-  const latlng = [46.6, 2.2]; // centre France par défaut
-  L.marker(latlng, {icon: greenIcon})
-    .addTo(map)
-    .bindPopup("VICT")
-    .openPopup();
-  sendPosition(latlng[0], latlng[1], "VICT", "green");
+  let name = "VICT";
+
+  // VICT utilise aussi la position réelle
+  map.locate({setView:true, maxZoom:14});
+  map.on('locationfound', e => {
+    const marker = L.marker(e.latlng, {icon: greenIcon})
+      .addTo(map)
+      .bindPopup(name)
+      .openPopup();
+    allMarkers.push(marker);
+    sendPosition(e.latlng.lat, e.latlng.lng, name, "green");
+  });
+  map.on('locationerror', e => {
+    alert("Impossible de récupérer votre position, point au centre de la France.");
+    const latlng = [46.6, 2.2];
+    const marker = L.marker(latlng, {icon: greenIcon})
+      .addTo(map)
+      .bindPopup(name)
+      .openPopup();
+    allMarkers.push(marker);
+    sendPosition(latlng[0], latlng[1], name, "green");
+  });
 
   document.getElementById('role-popup').style.display = 'none';
 });
@@ -108,10 +130,11 @@ document.getElementById('add-red-marker').addEventListener('click', () => {
 
   if(isNaN(lat) || isNaN(lng)){ alert("Coordonnées invalides !"); return; }
 
-  L.marker([lat,lng], {icon: redIcon})
+  const marker = L.marker([lat,lng], {icon: redIcon})
     .addTo(map)
     .bindPopup(name)
     .openPopup();
+  allMarkers.push(marker);
 
   map.setView([lat,lng], 14);
 });
@@ -121,10 +144,11 @@ map.on('click', e => {
   const name = prompt("Nom du point rouge :", "Bonhomme rouge");
   if(!name) return;
 
-  L.marker(e.latlng, {icon: redIcon})
+  const marker = L.marker(e.latlng, {icon: redIcon})
     .addTo(map)
     .bindPopup(name)
     .openPopup();
+  allMarkers.push(marker);
 
   document.getElementById('lat-input').value = e.latlng.lat.toFixed(6);
   document.getElementById('lng-input').value = e.latlng.lng.toFixed(6);
