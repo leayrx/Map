@@ -1,5 +1,6 @@
 // Initialiser la carte centrée sur Paris
-const map = L.map('map').setView([48.8566, 2.3522], 13);
+// Centrer sur la France entière
+const map = L.map('map').setView([46.6, 2.2], 5); 
 
 // Ajouter OpenStreetMap
 L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
