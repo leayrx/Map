@@ -85,3 +85,47 @@ if (lat && lng) {
     .bindPopup("Position partagée")
     .openPopup();
 }
+
+
+  /***************************/
+//Placement du marker en fonction des coordonnés renseignés
+
+let destinationMarker = null;
+
+// Clic sur le formulaire
+document.getElementById('add-marker').addEventListener('click', () => {
+  const lat = parseFloat(document.getElementById('lat-input').value);
+  const lng = parseFloat(document.getElementById('lng-input').value);
+
+  if (isNaN(lat) || isNaN(lng)) {
+    alert("Coordonnées invalides !");
+    return;
+  }
+
+  // Supprimer ancien marker
+  if (destinationMarker) map.removeLayer(destinationMarker);
+
+  destinationMarker = L.marker([lat, lng], {
+    icon: L.icon({
+      iconUrl: 'https://cdn-icons-png.flaticon.com/512/684/684908.png',
+      iconSize: [32, 32]
+    })
+  }).addTo(map).bindPopup("Destination").openPopup();
+
+  map.setView([lat, lng], 14);
+});
+
+// Optionnel : clic directement sur la carte pour placer le marker
+map.on('click', e => {
+  if (destinationMarker) map.removeLayer(destinationMarker);
+
+  destinationMarker = L.marker(e.latlng, {
+    icon: L.icon({
+      iconUrl: 'https://cdn-icons-png.flaticon.com/512/684/684908.png',
+      iconSize: [32, 32]
+    })
+  }).addTo(map).bindPopup("Destination").openPopup();
+
+  document.getElementById('lat-input').value = e.latlng.lat.toFixed(6);
+  document.getElementById('lng-input').value = e.latlng.lng.toFixed(6);
+});
