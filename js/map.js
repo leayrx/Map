@@ -1,12 +1,15 @@
 // =====================
 // CONFIG
 // =====================
-const webAppURL = "https://script.google.com/macros/s/AKfycbytuq2_QeqdgaueYOIcg9TxhL_ydSYEzMNnqIUcEiDS9jYwN6r-aIGN_q4cBky4vTCP/exec"; // remplace par ton lien production
+const webAppURL = "https://script.google.com/macros/s/AKfycbzUmfZO6F3CwozIjT1C7abyyjvrbDnplnr5VaRQrtxZHrfpr2OgXb4hiAVhxcI0NPu5/exec"; 
+const MAX_ACCURACY = 10000; // 10 km
+const TRACK_INTERVAL = 5000; // 5s
 
-// Carte centrée France
+// =====================
+// MAP
+// =====================
 const map = L.map("map").setView([46.6, 2.2], 6);
 
-// Fond OSM
 L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
   attribution: "© OpenStreetMap"
 }).addTo(map);
@@ -14,34 +17,47 @@ L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
 // =====================
 // ICONES
 // =====================
-const blueIcon = L.icon({
-  iconUrl: "https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-blue.png",
-  shadowUrl: "https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png",
-  iconSize: [25,41],
-  iconAnchor: [12,41]
-});
+function createIcon(color) {
+  return L.icon({
+    iconUrl: `https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-${color}.png`,
+    shadowUrl: "https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png",
+    iconSize: [25, 41],
+    iconAnchor: [12, 41]
+  });
+}
 
-const greenIcon = L.icon({
-  iconUrl: "https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-green.png",
-  shadowUrl: "https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png",
-  iconSize: [25,41],
-  iconAnchor: [12,41]
-});
+const icons = {
+  blue: createIcon("blue"),
+  green: createIcon("green"),
+  red: createIcon("red")
+};
 
-const redIcon = L.icon({
-  iconUrl: "https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-red.png",
-  shadowUrl: "https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png",
-  iconSize: [25,41],
-  iconAnchor: [12,41]
-});
+// =====================
+// ETAT UTILISATEUR
+// =====================
+let currentName = null;
+let currentColor = null;
+let currentMarker = null;
+let trackingTimer = null;
+
+// =====================
+// UI GPS
+// =====================
+const warningBox = document.getElementById("gps-warning");
+
+function showGpsInfo(meters) {
+  const km = (meters / 1000).toFixed(2);
+  warningBox.innerText = `📡 Précision GPS : ± ${km} km`;
+  warningBox.style.display = "block";
+}
 
 // =====================
 // GOOGLE SHEET
 // =====================
-function sendPosition(lat, lng, name, color) {
+function sendPosition(lat, lng, name, color, accuracy) {
   fetch(webAppURL, {
     method: "POST",
-    body: JSON.stringify({ lat, lng, name, color })
+    body: JSON.stringify({ lat, lng, name, color, accuracy })
   });
 }
 
@@ -50,14 +66,9 @@ function loadPositions() {
     .then(r => r.json())
     .then(data => {
       data.forEach(p => {
-        const icon =
-          p.color === "blue" ? blueIcon :
-          p.color === "green" ? greenIcon :
-          redIcon;
-
-        L.marker([p.lat, p.lng], { icon })
+        L.marker([p.lat, p.lng], { icon: icons[p.color] })
           .addTo(map)
-          .bindPopup(p.name);
+          .bindPopup(`${p.name}<br>± ${(p.accuracy / 1000).toFixed(2)} km`);
       });
     });
 }
@@ -65,27 +76,73 @@ function loadPositions() {
 loadPositions();
 
 // =====================
-// ROLE SP / VICT
+// TRACKING GPS
+// =====================
+function startTracking() {
+  if (trackingTimer) clearInterval(trackingTimer);
+  locateOnce();
+  trackingTimer = setInterval(locateOnce, TRACK_INTERVAL);
+}
+
+function locateOnce() {
+  map.locate({
+    enableHighAccuracy: true,
+    maximumAge: 0,
+    timeout: 15000
+  });
+}
+
+// =====================
+// LOGIQUE GPS
+// =====================
+map.on("locationfound", e => {
+  if (!currentName || !currentColor) return;
+
+  const acc = e.accuracy;
+
+  // ❌ AU-DELÀ DE 10 KM → BLOQUÉ
+  if (acc > MAX_ACCURACY) {
+    warningBox.innerText = `❌ GPS trop imprécis (± ${(acc / 1000).toFixed(2)} km)`;
+    warningBox.style.display = "block";
+    return;
+  }
+
+  // ℹ️ INFO PRÉCISION
+  showGpsInfo(acc);
+
+  // 📍 Marker
+  if (!currentMarker) {
+    currentMarker = L.marker(e.latlng, { icon: icons[currentColor] })
+      .addTo(map)
+      .bindPopup(() => `${currentName}<br>± ${(acc / 1000).toFixed(2)} km`)
+      .openPopup();
+  } else {
+    currentMarker.setLatLng(e.latlng);
+    currentMarker.setPopupContent(`${currentName}<br>± ${(acc / 1000).toFixed(2)} km`);
+  }
+
+  // 📡 Envoi
+  sendPosition(e.latlng.lat, e.latlng.lng, currentName, currentColor, acc);
+});
+
+// =====================
+// ROLES
 // =====================
 document.getElementById("btn-sp").onclick = () => {
-  let name = prompt("Nom SP :");
-  if(!name) return;
+  const name = prompt("Nom SP :");
+  if (!name) return;
 
-  map.locate();
-  map.once("locationfound", e => {
-    L.marker(e.latlng, { icon: blueIcon }).addTo(map).bindPopup(name).openPopup();
-    sendPosition(e.latlng.lat, e.latlng.lng, name, "blue");
-  });
+  currentName = name;
+  currentColor = "blue";
+  startTracking();
 
   document.getElementById("role-popup").style.display = "none";
 };
 
 document.getElementById("btn-vict").onclick = () => {
-  map.locate();
-  map.once("locationfound", e => {
-    L.marker(e.latlng, { icon: greenIcon }).addTo(map).bindPopup("VICT").openPopup();
-    sendPosition(e.latlng.lat, e.latlng.lng, "VICT", "green");
-  });
+  currentName = "VICT";
+  currentColor = "green";
+  startTracking();
 
   document.getElementById("role-popup").style.display = "none";
 };
@@ -94,17 +151,20 @@ document.getElementById("btn-vict").onclick = () => {
 // POINT ROUGE MANUEL
 // =====================
 document.getElementById("add-red-marker").onclick = () => {
-  const lat = parseFloat(lat-input.value);
-  const lng = parseFloat(lng-input.value);
-  const name = red-name.value;
+  const lat = parseFloat(document.getElementById("lat-input").value);
+  const lng = parseFloat(document.getElementById("lng-input").value);
+  const name = document.getElementById("red-name").value;
 
-  if(isNaN(lat) || isNaN(lng) || !name){
+  if (isNaN(lat) || isNaN(lng) || !name) {
     alert("Champs invalides");
     return;
   }
 
-  L.marker([lat,lng], { icon: redIcon }).addTo(map).bindPopup(name);
-  sendPosition(lat,lng,name,"red");
+  L.marker([lat, lng], { icon: icons.red })
+    .addTo(map)
+    .bindPopup(name);
+
+  sendPosition(lat, lng, name, "red", 0);
 };
 
 // =====================
@@ -117,11 +177,11 @@ selector.addEventListener("change", () => {
   const selected = Array.from(selector.selectedOptions).map(o => o.value);
 
   Object.keys(gpxLayers).forEach(k => {
-    if(!selected.includes(k)) map.removeLayer(gpxLayers[k]);
+    if (!selected.includes(k)) map.removeLayer(gpxLayers[k]);
   });
 
   selected.forEach(name => {
-    if(!gpxLayers[name]){
+    if (!gpxLayers[name]) {
       gpxLayers[name] = new L.GPX(`gpx/${name}.gpx`, {
         async: true,
         polyline_options: {
@@ -136,7 +196,7 @@ selector.addEventListener("change", () => {
   });
 });
 
-function getColor(name){
+function getColor(name) {
   const colors = {
     PIETON: "orange",
     VLI: "blue",
@@ -148,4 +208,3 @@ function getColor(name){
   };
   return colors[name] || "gray";
 }
-
