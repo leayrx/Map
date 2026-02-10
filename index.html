@@ -8,104 +8,55 @@
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
 
 <style>
-html, body {
-  margin: 0;
-  padding: 0;
-  height: 100%;
-}
+html, body { margin: 0; padding: 0; height: 100%; }
+#map { width: 100%; height: 100%; }
 
-#map {
-  width: 100%;
-  height: 100%;
-}
+/* UI container */
+#ui-container { position: absolute; top: 0; left: 0; width: 100%; z-index: 2000; pointer-events: none; }
+#ui-container > div { pointer-events: auto; }
 
-/* UI au-dessus de la carte */
-#ui-container {
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 100%;
-  z-index: 2000;
-  pointer-events: none;
-}
-
-#ui-container > div {
-  pointer-events: auto;
-}
-
-/* Popup rôle SP/VICT */
-#role-popup, #login-popup, #red-popup {
-  position: absolute;
-  top: 10px;
-  left: 50%;
-  transform: translateX(-50%);
-  background: white;
-  padding: 10px;
-  border-radius: 5px;
-  box-shadow: 0 0 10px rgba(0,0,0,0.3);
-  display: none;
-  z-index: 3000;
+/* Popups */
+#role-popup, #login-popup, #red-popup { 
+  position: absolute; top: 10px; left: 50%; transform: translateX(-50%);
+  background: white; padding: 10px; border-radius: 5px; box-shadow: 0 0 10px rgba(0,0,0,0.3);
+  display: none; z-index: 3000;
 }
 
 /* Formulaire point rouge manuel */
-#red-form {
-  position: absolute;
-  bottom: 10px;
-  left: 50%;
-  transform: translateX(-50%);
-  background: white;
-  padding: 10px;
-  border-radius: 5px;
-  box-shadow: 0 0 10px rgba(0,0,0,0.3);
+#red-form { 
+  position: absolute; top: 10px; left: 10px;
+  background: white; padding: 10px; border-radius: 5px; box-shadow: 0 0 10px rgba(0,0,0,0.3);
 }
 
-#red-form input, #red-popup input {
-  width: 90px;
+/* GPS warning */
+#gps-warning { 
+  position: absolute; bottom: 80px; left: 50%; transform: translateX(-50%);
+  background: #e3f2fd; padding: 8px 12px; border-radius: 5px; font-weight: bold; box-shadow: 0 0 8px rgba(0,0,0,0.3);
+  display: none;
 }
 
 /* Layer selector */
 #layer-selector {
-  position: absolute;
-  top: 10px;
-  right: 10px;
-  background: white;
-  padding: 8px;
-  border-radius: 5px;
-  box-shadow: 0 0 10px rgba(0,0,0,0.3);
+  position: absolute; top: 10px; right: 10px;
+  background: white; padding: 8px; border-radius: 5px; box-shadow: 0 0 10px rgba(0,0,0,0.3);
 }
 
-/* GPS warning */
-#gps-warning {
-  position: absolute;
-  bottom: 80px;
-  left: 50%;
-  transform: translateX(-50%);
-  background: #e3f2fd;
-  padding: 8px 12px;
-  border-radius: 5px;
-  font-weight: bold;
-  box-shadow: 0 0 8px rgba(0,0,0,0.3);
-  display: none;
-}
-
-/* Admin bouton bas droite */
-#admin-btn-container {
-  position: absolute;
-  bottom: 10px;
-  right: 10px;
-  z-index: 3000;
+/* Admin button bottom right */
+#btn-admin { 
+  position: absolute; bottom: 10px; right: 10px;
+  background: #2196f3; color: white; border: none; padding: 8px 12px; border-radius: 5px;
+  cursor: pointer; z-index: 3000;
 }
 </style>
 </head>
 
 <body>
-
 <div id="map"></div>
 
 <div id="ui-container">
 
   <!-- ROLE SP / VICT -->
-  <div id="role-popup" style="display:block;">
+  <div id="role-popup">
     <strong>Choisissez votre rôle</strong><br><br>
     <button id="btn-sp">SP</button>
     <button id="btn-vict">VICT</button>
@@ -140,7 +91,7 @@ html, body {
     <button id="add-red-marker">Ajouter</button>
   </div>
 
-  <!-- MENU GPX + BALISE -->
+  <!-- LAYER SELECTOR -->
   <div id="layer-selector">
     <strong>Moyens</strong><br>
     <select id="layer" multiple size="8">
@@ -159,14 +110,11 @@ html, body {
 
 </div>
 
-<!-- Admin bouton bas droite -->
-<div id="admin-btn-container">
-  <button id="btn-admin">Admin</button>
-</div>
+<!-- Admin button bottom right -->
+<button id="btn-admin">Admin</button>
 
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet-gpx/1.7.0/gpx.min.js"></script>
 <script src="js/map.js"></script>
-
 </body>
 </html>

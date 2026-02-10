@@ -1,7 +1,7 @@
 // =====================
 // CONFIG
 // =====================
-const webAppURL = "https://script.google.com/macros/s/AKfycbxCdYDAYFV9VHsnXYfF2-Y8rwbKFxmwzKwsnSOeiqmWnI9S5-NsLNFNPnGwMxxlj0nF/exec"; 
+const webAppURL = "https://script.google.com/macros/s/AKfycbwbmWgucmIGTx0Yiw62vIYWXDtVj1iqJ24MK3oOu6UrE5pQ-BCbRQwI4GRZuVypWzPT/exec"; 
 const MAX_ACCURACY = 10000; // 10 km
 const TRACK_INTERVAL = 5000; // 5s
 
@@ -9,6 +9,7 @@ const TRACK_INTERVAL = 5000; // 5s
 // MAP
 // =====================
 const map = L.map("map").setView([46.6, 2.2], 6);
+
 L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
   attribution: "© OpenStreetMap"
 }).addTo(map);
@@ -38,7 +39,7 @@ let currentName = null;
 let currentColor = null;
 let currentMarker = null;
 let trackingTimer = null;
-let isSPALS = false;
+let isAdmin = false;
 
 // =====================
 // UI GPS
@@ -64,16 +65,30 @@ function loadPositions() {
   fetch(webAppURL)
     .then(r => r.json())
     .then(data => {
+      // Supprimer les markers existants
+      if(window.allMarkers){
+        window.allMarkers.forEach(m => map.removeLayer(m));
+      }
+      window.allMarkers = [];
+
       data.forEach(p => {
-        const marker = L.marker([p.lat, p.lng], { icon: icons[p.color], draggable: p.color === 'red' && isSPALS })
-          .addTo(map)
-          .bindPopup(() => {
-            let html = `${p.name}<br>± ${(p.accuracy / 1000).toFixed(2)} km`;
-            if(p.photo) html += `<br><img src="${p.photo}" width="100">`;
-            if(isSPALS && p.color === 'red') html += `<br><button onclick="deleteMarker('${p.name}')">Supprimer</button>`;
-            return html;
-          });
-        if(p.color === 'red' && isSPALS){
+        const marker = L.marker([p.lat, p.lng], { 
+          icon: icons[p.color], 
+          draggable: (p.color === 'red' && isAdmin) || ((p.color === 'blue' || p.color === 'green') && isAdmin)
+        }).addTo(map)
+        .bindPopup(() => {
+          let html = `${p.name}<br>± ${(p.accuracy/1000).toFixed(2)} km`;
+          if(p.photo) html += `<br><img src="${p.photo}" width="100">`;
+          if(isAdmin){
+            html += `<br><button onclick="deleteMarker('${p.name}')">Supprimer</button>`;
+          }
+          return html;
+        });
+        
+        // Sauvegarde du marker pour suppression future
+        window.allMarkers.push(marker);
+
+        if(marker.options.draggable){
           marker.on('dragend', e => {
             const pos = e.target.getLatLng();
             sendPosition(pos.lat, pos.lng, p.name, p.color, p.accuracy, p.photo);
@@ -82,6 +97,8 @@ function loadPositions() {
       });
     });
 }
+
+loadPositions();
 
 // =====================
 // TRACKING GPS
@@ -105,6 +122,7 @@ function locateOnce() {
 // =====================
 map.on("locationfound", e => {
   if(!currentName || !currentColor) return;
+
   const acc = e.accuracy;
 
   if(acc > MAX_ACCURACY){
@@ -129,7 +147,7 @@ map.on("locationfound", e => {
 });
 
 // =====================
-// ROLES
+// ROLES SP / VICT
 // =====================
 document.getElementById("btn-sp").onclick = () => {
   const name = prompt("Nom SP :");
@@ -148,87 +166,74 @@ document.getElementById("btn-vict").onclick = () => {
 };
 
 // =====================
-// ADMIN BUTTON
+// BOUTON ADMIN EN BAS DROITE
 // =====================
-document.getElementById("btn-admin").onclick = () => {
-  document.getElementById("login-popup").style.display = "block";
-};
+const adminBtn = document.createElement("button");
+adminBtn.innerText = "Admin";
+adminBtn.style.position = "absolute";
+adminBtn.style.bottom = "10px";
+adminBtn.style.right = "10px";
+adminBtn.style.zIndex = 4000;
+adminBtn.style.padding = "8px";
+adminBtn.style.background = "#f39c12";
+adminBtn.style.border = "none";
+adminBtn.style.borderRadius = "5px";
+adminBtn.style.color = "white";
+adminBtn.style.cursor = "pointer";
+document.body.appendChild(adminBtn);
 
-// =====================
-// LOGIN SPALS
-// =====================
-document.getElementById("login-cancel").onclick = () => {
-  document.getElementById("login-popup").style.display = "none";
-};
-
-document.getElementById("login-btn").onclick = () => {
-  const id = document.getElementById("login-id").value;
-  const pass = document.getElementById("login-pass").value;
-  if(id === "SPALS" && pass === "ALS1924"){
-    isSPALS = true;
-    document.getElementById("login-popup").style.display = "none";
-    document.getElementById("red-popup").style.display = "block";
-    loadPositions(); // recharge avec possibilité drag
+adminBtn.onclick = () => {
+  const password = prompt("Mot de passe Admin :");
+  if(password === "ALS1924"){
+    isAdmin = true;
+    alert("Admin connecté !");
+    loadPositions();
   } else {
-    document.getElementById("login-error").style.display = "block";
+    alert("Mot de passe incorrect");
   }
 };
 
 // =====================
-// FORMULAIRES POINT ROUGE
+// SUPPRESSION SP / VICT OU POINT ROUGE
 // =====================
-document.getElementById("red-add-btn").onclick = async () => {
-  const lat = parseFloat(document.getElementById("red-lat").value);
-  const lng = parseFloat(document.getElementById("red-lng").value);
-  const title = document.getElementById("red-title").value;
-  const photoFile = document.getElementById("red-photo").files[0];
+window.deleteMarker = function(name){
+  if(!isAdmin) return alert("Seul Admin peut supprimer un point");
+  if(!confirm(`Supprimer ${name} ?`)) return;
 
-  if(isNaN(lat) || isNaN(lng) || !title){
-    alert("Champs invalides");
-    return;
-  }
-
-  let photoData = null;
-  if(photoFile){
-    photoData = await fileToBase64(photoFile);
-  }
-
-  const marker = L.marker([lat,lng], { icon: icons.red, draggable: true })
-    .addTo(map)
-    .bindPopup(() => {
-      let html = `${title}`;
-      if(photoData) html += `<br><img src="${photoData}" width="100">`;
-      if(isSPALS) html += `<br><button onclick="deleteMarker('${title}')">Supprimer</button>`;
-      return html;
+  fetch(`${webAppURL}?name=${encodeURIComponent(name)}`, { method: "DELETE" })
+    .then(r => r.text())
+    .then(res => {
+      if(res === "OK"){
+        alert("Point supprimé !");
+        loadPositions(); // recharge carte
+      } else {
+        alert("Point introuvable");
+      }
     });
-
-  marker.on('dragend', e => {
-    const pos = e.target.getLatLng();
-    sendPosition(pos.lat, pos.lng, title, 'red', 0, photoData);
-  });
-
-  sendPosition(lat, lng, title, 'red', 0, photoData);
-  alert("Point rouge ajouté !");
 };
 
-document.getElementById("red-close-btn").onclick = () => {
-  document.getElementById("red-popup").style.display = "none";
-};
-
+// =====================
+// FORMULAIRE POINT ROUGE
+// =====================
 document.getElementById("add-red-marker").onclick = () => {
   const lat = parseFloat(document.getElementById("lat-input").value);
   const lng = parseFloat(document.getElementById("lng-input").value);
   const name = document.getElementById("red-name").value;
+
   if(isNaN(lat) || isNaN(lng) || !name){
     alert("Champs invalides");
     return;
   }
-  L.marker([lat, lng], { icon: icons.red }).addTo(map).bindPopup(name);
+
+  L.marker([lat, lng], { icon: icons.red })
+    .addTo(map)
+    .bindPopup(name);
+
   sendPosition(lat, lng, name, "red", 0);
 };
 
 // =====================
-// GPX LAYERS
+// GPX + BALISE
 // =====================
 const gpxLayers = {};
 const selector = document.getElementById("layer");
@@ -242,11 +247,15 @@ selector.addEventListener("change", () => {
 
   selected.forEach(name => {
     if(name === 'BALISE'){
-      loadPositions();
+      loadPositions(); // recharge tous les points rouges
     } else if(!gpxLayers[name]){
       gpxLayers[name] = new L.GPX(`gpx/${name}.gpx`, {
         async: true,
-        polyline_options: { color: getColor(name), weight: 4, opacity: 0.7 }
+        polyline_options: {
+          color: getColor(name),
+          weight: 4,
+          opacity: 0.7
+        }
       }).addTo(map);
     } else {
       map.addLayer(gpxLayers[name]);
@@ -254,35 +263,15 @@ selector.addEventListener("change", () => {
   });
 });
 
-// =====================
-// UTILITAIRES
-// =====================
-function fileToBase64(file){
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onload = () => resolve(reader.result);
-    reader.onerror = error => reject(error);
-    reader.readAsDataURL(file);
-  });
-}
-
-window.deleteMarker = function(name){
-  if(!isSPALS) return alert("Seul SPALS peut supprimer un point");
-  if(!confirm(`Supprimer la balise "${name}" ?`)) return;
-
-  fetch(`${webAppURL}?name=${encodeURIComponent(name)}`, { method: "DELETE" })
-    .then(r => r.text())
-    .then(res => {
-      if(res === "OK"){
-        alert("Point supprimé !");
-        loadPositions();
-      } else {
-        alert("Point introuvable");
-      }
-    });
-};
-
 function getColor(name){
-  const colors = { PIETON:"orange", VLI:"blue", VLTT:"green", VSAV:"red", CTU:"purple", FPT:"black", CCF:"brown" };
+  const colors = {
+    PIETON: "orange",
+    VLI: "blue",
+    VLTT: "green",
+    VSAV: "red",
+    CTU: "purple",
+    FPT: "black",
+    CCF: "brown"
+  };
   return colors[name] || "gray";
 }
