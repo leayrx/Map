@@ -152,15 +152,30 @@ document.getElementById("login-cancel").onclick = ()=>{ document.getElementById(
 document.getElementById("btn-admin").onclick = ()=>{ document.getElementById("login-popup").style.display="block"; };
 
 document.getElementById("login-btn").onclick = ()=>{
-  const id=document.getElementById("login-id").value;
-  const pass=document.getElementById("login-pass").value;
-  if(id==="SPALS" && pass==="ALS1924"){
-    isAdmin=true;
-    document.getElementById("login-popup").style.display="none";
-    document.getElementById("red-popup").style.display="block";
-    loadPositions(SHEET_RED_NAME); // recharge avec possibilité drag
-    loadPositions(SHEET_POS_NAME); // recharge SP/VICT
-  } else document.getElementById("login-error").style.display="block";
+  const id = document.getElementById("login-id").value;
+  const pass = document.getElementById("login-pass").value;
+  if(id === "SPALS" && pass === "ALS1924"){
+    isAdmin = true;
+
+    // 1️⃣ Masquer la popup login
+    document.getElementById("login-popup").style.display = "none";
+
+    // 2️⃣ Afficher message admin connecté
+    document.getElementById("admin-status").style.display = "block";
+
+    // 3️⃣ Afficher le formulaire de points rouges
+    document.getElementById("red-popup").style.display = "block";
+
+    // 4️⃣ Recharger les positions SP/VICT et rouges
+    loadPositions(SHEET_RED_NAME);
+    loadPositions(SHEET_POS_NAME);
+
+    // 5️⃣ Optionnel: masquer le bouton Admin
+    document.getElementById("btn-admin").style.display = "none";
+  } else {
+    // Afficher message erreur
+    document.getElementById("login-error").style.display = "block";
+  }
 };
 
 // =====================

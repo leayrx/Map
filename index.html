@@ -33,6 +33,7 @@ html, body {
   pointer-events: auto;
 }
 
+
 /* ------------------------------
    POPUP ROLE SP/VICT (centrée)
 ---------------------------------*/
@@ -49,20 +50,7 @@ html, body {
 /* ------------------------------
    LOGIN SPALS (centrée)
 ---------------------------------*/
-#login-popup {/*
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%,-50%);
-  background: white;
-  padding: 15px 20px;
-  border-radius: 6px;
-  box-shadow: 0 0 12px rgba(0,0,0,0.4);
-  display: none;
-  z-index: 3000;
-  max-width: 250px;
-  text-align: center;
-*/
+#login-popup {
   position: absolute; 
   top: 10px; left: 50%; 
   transform: translateX(-50%); 
@@ -76,7 +64,7 @@ html, body {
 /* ------------------------------
    FORMULAIRE POINT ROUGE
 ---------------------------------*/
-#red-popup {
+#red-popup {/*
   position: absolute;
   bottom: 80px;
   left: 50%;
@@ -86,7 +74,17 @@ html, body {
   border-radius: 5px;
   box-shadow: 0 0 10px rgba(0,0,0,0.3);
   display: none;
-  z-index: 3000;
+  z-index: 4000;*/
+
+
+  position: absolute; 
+  top: 10px; left: 50%; 
+  transform: translateX(-50%); 
+  background: white; 
+  padding: 10px; 
+  border-radius: 5px; 
+  box-shadow: 0 0 10px rgba(0,0,0,0.3);
+  display: none;
 }
 #red-popup input { width: 90px; }
 
@@ -179,6 +177,13 @@ html, body {
     <button id="btn-sp">SP</button>
     <button id="btn-vict">VICT</button>
   </div>
+
+  <!-- Indicateur Admin -->
+<div id="admin-status" style="position:absolute;top:10px;left:10px;
+  background:#1976d2;color:white;padding:5px 10px;border-radius:4px;
+  display:none; z-index:4000;">
+  Admin connecté
+</div>
 
   <!-- LOGIN SPALS (centrée) -->
   <div id="login-popup">
