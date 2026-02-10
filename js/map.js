@@ -1,7 +1,7 @@
 // =====================
 // CONFIG
 // =====================
-const webAppURL = "https://script.google.com/macros/s/AKfycbzUmfZO6F3CwozIjT1C7abyyjvrbDnplnr5VaRQrtxZHrfpr2OgXb4hiAVhxcI0NPu5/exec"; 
+const webAppURL = "https://script.google.com/macros/s/AKfycbxCdYDAYFV9VHsnXYfF2-Y8rwbKFxmwzKwsnSOeiqmWnI9S5-NsLNFNPnGwMxxlj0nF/exec"; 
 const MAX_ACCURACY = 10000; // 10 km
 const TRACK_INTERVAL = 5000; // 5s
 
@@ -39,12 +39,12 @@ let currentName = null;
 let currentColor = null;
 let currentMarker = null;
 let trackingTimer = null;
+let isSPALS = false;
 
 // =====================
 // UI GPS
 // =====================
 const warningBox = document.getElementById("gps-warning");
-
 function showGpsInfo(meters) {
   const km = (meters / 1000).toFixed(2);
   warningBox.innerText = `📡 Précision GPS : ± ${km} km`;
@@ -54,10 +54,10 @@ function showGpsInfo(meters) {
 // =====================
 // GOOGLE SHEET
 // =====================
-function sendPosition(lat, lng, name, color, accuracy) {
+function sendPosition(lat, lng, name, color, accuracy, photo=null) {
   fetch(webAppURL, {
     method: "POST",
-    body: JSON.stringify({ lat, lng, name, color, accuracy })
+    body: JSON.stringify({ lat, lng, name, color, accuracy, photo })
   });
 }
 
@@ -66,9 +66,19 @@ function loadPositions() {
     .then(r => r.json())
     .then(data => {
       data.forEach(p => {
-        L.marker([p.lat, p.lng], { icon: icons[p.color] })
+        const marker = L.marker([p.lat, p.lng], { icon: icons[p.color], draggable: p.color === 'red' && isSPALS })
           .addTo(map)
-          .bindPopup(`${p.name}<br>± ${(p.accuracy / 1000).toFixed(2)} km`);
+          .bindPopup(() => {
+            let html = `${p.name}<br>± ${(p.accuracy / 1000).toFixed(2)} km`;
+            if(p.photo) html += `<br><img src="${p.photo}" width="100">`;
+            return html;
+          });
+        if(p.color === 'red' && isSPALS){
+          marker.on('dragend', e => {
+            const pos = e.target.getLatLng();
+            sendPosition(pos.lat, pos.lng, p.name, p.color, p.accuracy, p.photo);
+          });
+        }
       });
     });
 }
@@ -79,7 +89,7 @@ loadPositions();
 // TRACKING GPS
 // =====================
 function startTracking() {
-  if (trackingTimer) clearInterval(trackingTimer);
+  if(trackingTimer) clearInterval(trackingTimer);
   locateOnce();
   trackingTimer = setInterval(locateOnce, TRACK_INTERVAL);
 }
@@ -96,32 +106,28 @@ function locateOnce() {
 // LOGIQUE GPS
 // =====================
 map.on("locationfound", e => {
-  if (!currentName || !currentColor) return;
+  if(!currentName || !currentColor) return;
 
   const acc = e.accuracy;
 
-  // ❌ AU-DELÀ DE 10 KM → BLOQUÉ
-  if (acc > MAX_ACCURACY) {
-    warningBox.innerText = `❌ GPS trop imprécis (± ${(acc / 1000).toFixed(2)} km)`;
+  if(acc > MAX_ACCURACY){
+    warningBox.innerText = `❌ GPS trop imprécis (± ${(acc/1000).toFixed(2)} km)`;
     warningBox.style.display = "block";
     return;
   }
 
-  // ℹ️ INFO PRÉCISION
   showGpsInfo(acc);
 
-  // 📍 Marker
-  if (!currentMarker) {
+  if(!currentMarker){
     currentMarker = L.marker(e.latlng, { icon: icons[currentColor] })
       .addTo(map)
-      .bindPopup(() => `${currentName}<br>± ${(acc / 1000).toFixed(2)} km`)
+      .bindPopup(() => `${currentName}<br>± ${(acc/1000).toFixed(2)} km`)
       .openPopup();
   } else {
     currentMarker.setLatLng(e.latlng);
-    currentMarker.setPopupContent(`${currentName}<br>± ${(acc / 1000).toFixed(2)} km`);
+    currentMarker.setPopupContent(`${currentName}<br>± ${(acc/1000).toFixed(2)} km`);
   }
 
-  // 📡 Envoi
   sendPosition(e.latlng.lat, e.latlng.lng, currentName, currentColor, acc);
 });
 
@@ -130,12 +136,10 @@ map.on("locationfound", e => {
 // =====================
 document.getElementById("btn-sp").onclick = () => {
   const name = prompt("Nom SP :");
-  if (!name) return;
-
+  if(!name) return;
   currentName = name;
   currentColor = "blue";
   startTracking();
-
   document.getElementById("role-popup").style.display = "none";
 };
 
@@ -143,19 +147,82 @@ document.getElementById("btn-vict").onclick = () => {
   currentName = "VICT";
   currentColor = "green";
   startTracking();
-
   document.getElementById("role-popup").style.display = "none";
 };
 
 // =====================
-// POINT ROUGE MANUEL
+// LOGIN SPALS
+// =====================
+document.getElementById("btn-login").onclick = () => {
+  document.getElementById("login-popup").style.display = "block";
+};
+
+document.getElementById("login-cancel").onclick = () => {
+  document.getElementById("login-popup").style.display = "none";
+};
+
+document.getElementById("login-btn").onclick = () => {
+  const id = document.getElementById("login-id").value;
+  const pass = document.getElementById("login-pass").value;
+  if(id === "SPALS" && pass === "ALS1924"){
+    isSPALS = true;
+    document.getElementById("login-popup").style.display = "none";
+    document.getElementById("red-popup").style.display = "block";
+    loadPositions(); // recharge avec possibilité drag
+  } else {
+    document.getElementById("login-error").style.display = "block";
+  }
+};
+
+// =====================
+// AJOUT POINT ROUGE AVANCÉ
+// =====================
+document.getElementById("red-add-btn").onclick = () => {
+  const lat = parseFloat(document.getElementById("red-lat").value);
+  const lng = parseFloat(document.getElementById("red-lng").value);
+  const title = document.getElementById("red-title").value;
+  const photoFile = document.getElementById("red-photo").files[0];
+
+  if(isNaN(lat) || isNaN(lng) || !title){
+    alert("Champs invalides");
+    return;
+  }
+
+  let photoURL = null;
+  if(photoFile){
+    photoURL = URL.createObjectURL(photoFile);
+  }
+
+  const marker = L.marker([lat,lng], { icon: icons.red, draggable: true })
+    .addTo(map)
+    .bindPopup(() => {
+      let html = `${title}`;
+      if(photoURL) html += `<br><img src="${photoURL}" width="100">`;
+      return html;
+    });
+
+  marker.on('dragend', e => {
+    const pos = e.target.getLatLng();
+    sendPosition(pos.lat, pos.lng, title, 'red', 0, photoURL);
+  });
+
+  sendPosition(lat, lng, title, 'red', 0, photoURL);
+  alert("Point rouge ajouté !");
+};
+
+document.getElementById("red-close-btn").onclick = () => {
+  document.getElementById("red-popup").style.display = "none";
+};
+
+// =====================
+// POINT ROUGE MANUEL EXISTANT
 // =====================
 document.getElementById("add-red-marker").onclick = () => {
   const lat = parseFloat(document.getElementById("lat-input").value);
   const lng = parseFloat(document.getElementById("lng-input").value);
   const name = document.getElementById("red-name").value;
 
-  if (isNaN(lat) || isNaN(lng) || !name) {
+  if(isNaN(lat) || isNaN(lng) || !name){
     alert("Champs invalides");
     return;
   }
@@ -168,7 +235,7 @@ document.getElementById("add-red-marker").onclick = () => {
 };
 
 // =====================
-// GPX MULTI-CALQUES
+// GPX MULTI-CALQUES + BALISE
 // =====================
 const gpxLayers = {};
 const selector = document.getElementById("layer");
@@ -177,11 +244,13 @@ selector.addEventListener("change", () => {
   const selected = Array.from(selector.selectedOptions).map(o => o.value);
 
   Object.keys(gpxLayers).forEach(k => {
-    if (!selected.includes(k)) map.removeLayer(gpxLayers[k]);
+    if(!selected.includes(k)) map.removeLayer(gpxLayers[k]);
   });
 
   selected.forEach(name => {
-    if (!gpxLayers[name]) {
+    if(name === 'BALISE'){
+      loadPositions(); // recharge tous les points rouges visibles
+    } else if(!gpxLayers[name]){
       gpxLayers[name] = new L.GPX(`gpx/${name}.gpx`, {
         async: true,
         polyline_options: {
@@ -193,10 +262,78 @@ selector.addEventListener("change", () => {
     } else {
       map.addLayer(gpxLayers[name]);
     }
+  
   });
+// -------------------
+// Ajouter point rouge avec photo upload
+// -------------------
+document.getElementById("red-add-btn").onclick = async () => {
+  const lat = parseFloat(document.getElementById("red-lat").value);
+  const lng = parseFloat(document.getElementById("red-lng").value);
+  const title = document.getElementById("red-title").value;
+  const photoFile = document.getElementById("red-photo").files[0];
+
+  if(isNaN(lat) || isNaN(lng) || !title){
+    alert("Champs invalides");
+    return;
+  }
+
+  let photoData = null;
+  if(photoFile){
+    photoData = await fileToBase64(photoFile);
+  }
+
+  const marker = L.marker([lat,lng], { icon: icons.red, draggable: true })
+    .addTo(map)
+    .bindPopup(() => {
+      let html = `${title}`;
+      if(photoFile) html += `<br><img src="${photoData}" width="100">`;
+      if(isSPALS) html += `<br><button onclick="deleteMarker('${title}')">Supprimer</button>`;
+      return html;
+    });
+
+  marker.on('dragend', e => {
+    const pos = e.target.getLatLng();
+    sendPosition(pos.lat, pos.lng, title, 'red', 0, photoData);
+  });
+
+  sendPosition(lat, lng, title, 'red', 0, photoData);
+  alert("Point rouge ajouté !");
+};
+
+// -------------------
+// Convert file en base64
+// -------------------
+function fileToBase64(file){
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(reader.result);
+    reader.onerror = error => reject(error);
+    reader.readAsDataURL(file);
+  });
+}
+
+// -------------------
+// Supprimer un point (SPALS)
+// -------------------
+window.deleteMarker = function(name){
+  if(!isSPALS) return alert("Seul SPALS peut supprimer un point");
+  if(!confirm(`Supprimer la balise "${name}" ?`)) return;
+
+  fetch(`${webAppURL}?name=${encodeURIComponent(name)}`, { method: "DELETE" })
+    .then(r => r.text())
+    .then(res => {
+      if(res === "OK"){
+        alert("Point supprimé !");
+        loadPositions(); // recharge carte
+      } else {
+        alert("Point introuvable");
+      }
+    });
+};
 });
 
-function getColor(name) {
+function getColor(name){
   const colors = {
     PIETON: "orange",
     VLI: "blue",
@@ -208,3 +345,5 @@ function getColor(name) {
   };
   return colors[name] || "gray";
 }
+
+

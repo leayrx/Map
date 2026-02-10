@@ -34,7 +34,7 @@ html, body {
 }
 
 /* POPUP ROLE */
-#role-popup {
+#role-popup, #login-popup, #red-popup {
   position: absolute;
   top: 10px;
   left: 50%;
@@ -43,6 +43,8 @@ html, body {
   padding: 10px;
   border-radius: 5px;
   box-shadow: 0 0 10px rgba(0,0,0,0.3);
+  display: none;
+  z-index: 3000;
 }
 
 /* FORMULAIRE POINT ROUGE */
@@ -57,11 +59,10 @@ html, body {
   box-shadow: 0 0 10px rgba(0,0,0,0.3);
 }
 
-#red-form input {
+#red-form input, #red-popup input {
   width: 90px;
 }
 
-/* MENU GPX */
 #layer-selector {
   position: absolute;
   top: 10px;
@@ -72,7 +73,6 @@ html, body {
   box-shadow: 0 0 10px rgba(0,0,0,0.3);
 }
 
-/* MESSAGE PRÉCISION GPS */
 #gps-warning {
   position: absolute;
   bottom: 80px;
@@ -94,22 +94,47 @@ html, body {
 
 <div id="ui-container">
 
+  <!-- ROLE SP / VICT -->
   <div id="role-popup">
     <strong>Choisissez votre rôle</strong><br><br>
     <button id="btn-sp">SP</button>
     <button id="btn-vict">VICT</button>
   </div>
 
+  <!-- LOGIN SPALS -->
+  <div id="login-popup">
+    <strong>Connexion SPALS</strong><br><br>
+    <input type="text" id="login-id" placeholder="Identifiant"><br><br>
+    <input type="password" id="login-pass" placeholder="Mot de passe"><br><br>
+    <button id="login-btn">Se connecter</button>
+    <button id="login-cancel">Annuler</button>
+    <p id="login-error" style="color:red; display:none;">Identifiant ou mot de passe incorrect</p>
+  </div>
+
+  <!-- MENU AJOUT POINT ROUGE -->
+  <div id="red-popup">
+    <strong>Ajouter un point rouge</strong><br><br>
+    <input id="red-lat" placeholder="Lat">
+    <input id="red-lng" placeholder="Lng"><br><br>
+    <input id="red-title" placeholder="Légende">
+    <input type="file" id="red-photo"><br><br>
+    <button id="red-add-btn">Ajouter</button>
+    <button id="red-close-btn">Fermer</button>
+  </div>
+
+  <!-- FORMULAIRE POINT ROUGE MANUEL -->
   <div id="red-form">
     <input id="lat-input" placeholder="Lat">
     <input id="lng-input" placeholder="Lng">
     <input id="red-name" placeholder="Nom">
     <button id="add-red-marker">Ajouter</button>
+    <button id="btn-login">SPALS Login</button>
   </div>
 
+  <!-- MENU GPX + BALISE -->
   <div id="layer-selector">
     <strong>Moyens</strong><br>
-    <select id="layer" multiple size="7">
+    <select id="layer" multiple size="8">
       <option value="PIETON">Piéton</option>
       <option value="VLI">VLI</option>
       <option value="VLTT">VLTT</option>
@@ -117,6 +142,7 @@ html, body {
       <option value="CTU">CTU</option>
       <option value="FPT">FPT</option>
       <option value="CCF">CCF</option>
+      <option value="BALISE">Balise</option>
     </select>
   </div>
 
