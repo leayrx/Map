@@ -33,7 +33,7 @@ html, body {
   pointer-events: auto;
 }
 
-/* POPUP ROLE */
+/* POPUPS */
 #role-popup, #login-popup, #red-popup {
   position: absolute;
   top: 10px;
@@ -95,7 +95,7 @@ html, body {
 <div id="ui-container">
 
   <!-- ROLE SP / VICT -->
-  <div id="role-popup">
+  <div id="role-popup" style="display:block">
     <strong>Choisissez votre rôle</strong><br><br>
     <button id="btn-sp">SP</button>
     <button id="btn-vict">VICT</button>
@@ -103,7 +103,7 @@ html, body {
 
   <!-- LOGIN SPALS -->
   <div id="login-popup">
-    <strong>Connexion SPALS</strong><br><br>
+    <strong>Connexion Admin (SPALS)</strong><br><br>
     <input type="text" id="login-id" placeholder="Identifiant"><br><br>
     <input type="password" id="login-pass" placeholder="Mot de passe"><br><br>
     <button id="login-btn">Se connecter</button>
@@ -122,13 +122,13 @@ html, body {
     <button id="red-close-btn">Fermer</button>
   </div>
 
-  <!-- FORMULAIRE POINT ROUGE MANUEL -->
+  <!-- FORMULAIRE POINT ROUGE MANUEL + Admin -->
   <div id="red-form">
     <input id="lat-input" placeholder="Lat">
     <input id="lng-input" placeholder="Lng">
     <input id="red-name" placeholder="Nom">
     <button id="add-red-marker">Ajouter</button>
-    <button id="btn-login">SPALS Login</button>
+    <button id="btn-admin">Admin</button>
   </div>
 
   <!-- MENU GPX + BALISE -->
@@ -153,6 +153,14 @@ html, body {
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet-gpx/1.7.0/gpx.min.js"></script>
 <script src="js/map.js"></script>
+
+<script>
+// -------------------
+// Bouton Admin pour afficher le login SPALS
+document.getElementById("btn-admin").onclick = () => {
+  document.getElementById("login-popup").style.display = "block";
+};
+</script>
 
 </body>
 </html>

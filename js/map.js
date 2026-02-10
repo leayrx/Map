@@ -61,29 +61,30 @@ function sendPosition(lat, lng, name, color, accuracy, photo=null) {
   });
 }
 
-function loadPositions() {
-  fetch(webAppURL)
-    .then(r => r.json())
-    .then(data => {
-      data.forEach(p => {
-        const marker = L.marker([p.lat, p.lng], { icon: icons[p.color], draggable: p.color === 'red' && isSPALS })
-          .addTo(map)
-          .bindPopup(() => {
-            let html = `${p.name}<br>± ${(p.accuracy / 1000).toFixed(2)} km`;
-            if(p.photo) html += `<br><img src="${p.photo}" width="100">`;
-            return html;
-          });
-        if(p.color === 'red' && isSPALS){
-          marker.on('dragend', e => {
-            const pos = e.target.getLatLng();
-            sendPosition(pos.lat, pos.lng, p.name, p.color, p.accuracy, p.photo);
-          });
-        }
-      });
-    });
-}
+async function loadPositions() {
+  const res = await fetch(webAppURL);
+  const data = await res.json();
+  data.forEach(p => {
+    const marker = L.marker([p.lat, p.lng], { 
+      icon: icons[p.color], 
+      draggable: p.color === 'red' && isSPALS 
+    }).addTo(map);
 
-loadPositions();
+    marker.bindPopup(() => {
+      let html = `${p.name}<br>± ${(p.accuracy / 1000).toFixed(2)} km`;
+      if(p.photo) html += `<br><img src="${p.photo}" width="100">`;
+      if(isSPALS && p.color === 'red') html += `<br><button onclick="deleteMarker('${p.name}')">Supprimer</button>`;
+      return html;
+    });
+
+    if(p.color === 'red' && isSPALS){
+      marker.on('dragend', e => {
+        const pos = e.target.getLatLng();
+        sendPosition(pos.lat, pos.lng, p.name, p.color, p.accuracy, p.photo);
+      });
+    }
+  });
+}
 
 // =====================
 // TRACKING GPS
@@ -121,7 +122,7 @@ map.on("locationfound", e => {
   if(!currentMarker){
     currentMarker = L.marker(e.latlng, { icon: icons[currentColor] })
       .addTo(map)
-      .bindPopup(() => `${currentName}<br>± ${(acc/1000).toFixed(2)} km`)
+      .bindPopup(`${currentName}<br>± ${(acc/1000).toFixed(2)} km`)
       .openPopup();
   } else {
     currentMarker.setLatLng(e.latlng);
@@ -151,9 +152,9 @@ document.getElementById("btn-vict").onclick = () => {
 };
 
 // =====================
-// LOGIN SPALS
+// ADMIN BUTTON pour afficher LOGIN SPALS
 // =====================
-document.getElementById("btn-login").onclick = () => {
+document.getElementById("btn-admin").onclick = () => {
   document.getElementById("login-popup").style.display = "block";
 };
 
@@ -175,9 +176,9 @@ document.getElementById("login-btn").onclick = () => {
 };
 
 // =====================
-// AJOUT POINT ROUGE AVANCÉ
+// AJOUT POINT ROUGE
 // =====================
-document.getElementById("red-add-btn").onclick = () => {
+document.getElementById("red-add-btn").onclick = async () => {
   const lat = parseFloat(document.getElementById("red-lat").value);
   const lng = parseFloat(document.getElementById("red-lng").value);
   const title = document.getElementById("red-title").value;
@@ -188,25 +189,27 @@ document.getElementById("red-add-btn").onclick = () => {
     return;
   }
 
-  let photoURL = null;
+  let photoData = null;
   if(photoFile){
-    photoURL = URL.createObjectURL(photoFile);
+    photoData = await fileToBase64(photoFile);
   }
 
   const marker = L.marker([lat,lng], { icon: icons.red, draggable: true })
-    .addTo(map)
-    .bindPopup(() => {
-      let html = `${title}`;
-      if(photoURL) html += `<br><img src="${photoURL}" width="100">`;
-      return html;
-    });
+    .addTo(map);
+
+  marker.bindPopup(() => {
+    let html = `${title}`;
+    if(photoData) html += `<br><img src="${photoData}" width="100">`;
+    if(isSPALS) html += `<br><button onclick="deleteMarker('${title}')">Supprimer</button>`;
+    return html;
+  });
 
   marker.on('dragend', e => {
     const pos = e.target.getLatLng();
-    sendPosition(pos.lat, pos.lng, title, 'red', 0, photoURL);
+    sendPosition(pos.lat, pos.lng, title, 'red', 0, photoData);
   });
 
-  sendPosition(lat, lng, title, 'red', 0, photoURL);
+  sendPosition(lat, lng, title, 'red', 0, photoData);
   alert("Point rouge ajouté !");
 };
 
@@ -215,7 +218,7 @@ document.getElementById("red-close-btn").onclick = () => {
 };
 
 // =====================
-// POINT ROUGE MANUEL EXISTANT
+// POINT ROUGE MANUEL
 // =====================
 document.getElementById("add-red-marker").onclick = () => {
   const lat = parseFloat(document.getElementById("lat-input").value);
@@ -227,9 +230,8 @@ document.getElementById("add-red-marker").onclick = () => {
     return;
   }
 
-  L.marker([lat, lng], { icon: icons.red })
-    .addTo(map)
-    .bindPopup(name);
+  const marker = L.marker([lat, lng], { icon: icons.red }).addTo(map);
+  marker.bindPopup(name);
 
   sendPosition(lat, lng, name, "red", 0);
 };
@@ -262,48 +264,12 @@ selector.addEventListener("change", () => {
     } else {
       map.addLayer(gpxLayers[name]);
     }
-  
   });
-// -------------------
-// Ajouter point rouge avec photo upload
-// -------------------
-document.getElementById("red-add-btn").onclick = async () => {
-  const lat = parseFloat(document.getElementById("red-lat").value);
-  const lng = parseFloat(document.getElementById("red-lng").value);
-  const title = document.getElementById("red-title").value;
-  const photoFile = document.getElementById("red-photo").files[0];
+});
 
-  if(isNaN(lat) || isNaN(lng) || !title){
-    alert("Champs invalides");
-    return;
-  }
-
-  let photoData = null;
-  if(photoFile){
-    photoData = await fileToBase64(photoFile);
-  }
-
-  const marker = L.marker([lat,lng], { icon: icons.red, draggable: true })
-    .addTo(map)
-    .bindPopup(() => {
-      let html = `${title}`;
-      if(photoFile) html += `<br><img src="${photoData}" width="100">`;
-      if(isSPALS) html += `<br><button onclick="deleteMarker('${title}')">Supprimer</button>`;
-      return html;
-    });
-
-  marker.on('dragend', e => {
-    const pos = e.target.getLatLng();
-    sendPosition(pos.lat, pos.lng, title, 'red', 0, photoData);
-  });
-
-  sendPosition(lat, lng, title, 'red', 0, photoData);
-  alert("Point rouge ajouté !");
-};
-
-// -------------------
-// Convert file en base64
-// -------------------
+// =====================
+// UTILITAIRES
+// =====================
 function fileToBase64(file){
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
@@ -313,9 +279,6 @@ function fileToBase64(file){
   });
 }
 
-// -------------------
-// Supprimer un point (SPALS)
-// -------------------
 window.deleteMarker = function(name){
   if(!isSPALS) return alert("Seul SPALS peut supprimer un point");
   if(!confirm(`Supprimer la balise "${name}" ?`)) return;
@@ -331,7 +294,6 @@ window.deleteMarker = function(name){
       }
     });
 };
-});
 
 function getColor(name){
   const colors = {
@@ -345,5 +307,3 @@ function getColor(name){
   };
   return colors[name] || "gray";
 }
-
-
