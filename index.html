@@ -81,14 +81,28 @@ html, body {
 /* FORMULAIRE POINT ROUGE MANUEL */
 #red-form {
   position: absolute;
-  top: 10px;
-  left: 10px;
+  bottom: 30px; /* décalé du bas */
+  left: 50%;
+  transform: translateX(-50%);
   background: white;
-  padding: 8px;
+  padding: 10px 12px;
   border-radius: 5px;
   box-shadow: 0 0 10px rgba(0,0,0,0.3);
   z-index: 2000;
+  max-width: 300px;
 }
+
+#red-form input {
+  width: 120px;
+  margin: 2px;
+}
+
+#red-form button {
+  margin-top: 4px;
+  margin-right: 4px;
+  cursor: pointer;
+}
+
 
 /* LAYER SELECTOR GPX */
 #layer-selector {
@@ -165,14 +179,17 @@ html, body {
     <button id="red-close-btn">Fermer</button>
   </div>
 
-  <!-- FORMULAIRE POINT ROUGE MANUEL -->
-  <div id="red-form">
+ 
+<!-- FORMULAIRE POINT ROUGE MANUEL -->
+  <div id="red-form" style="display:block;">
+    <strong>Ajouter un point manuel</strong><br><br>
     <input id="lat-input" placeholder="Lat">
-    <input id="lng-input" placeholder="Lng">
+    <input id="lng-input" placeholder="Lng"><br><br>
     <input id="red-name" placeholder="Nom">
     <button id="add-red-marker">Ajouter</button>
     <button id="btn-login">Admin Login</button>
   </div>
+
 
   <!-- MENU GPX + BALISE -->
   <div id="layer-selector">
