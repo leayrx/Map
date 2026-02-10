@@ -8,54 +8,136 @@
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
 
 <style>
-html, body { margin: 0; padding: 0; height: 100%; }
-#map { width: 100%; height: 100%; }
-
-/* UI container */
-#ui-container { position: absolute; top: 0; left: 0; width: 100%; z-index: 2000; pointer-events: none; }
-#ui-container > div { pointer-events: auto; }
-
-/* Popups */
-#role-popup, #login-popup, #red-popup { 
-  position: absolute; top: 10px; left: 50%; transform: translateX(-50%);
-  background: white; padding: 10px; border-radius: 5px; box-shadow: 0 0 10px rgba(0,0,0,0.3);
-  display: none; z-index: 3000;
+html, body {
+  margin: 0;
+  padding: 0;
+  height: 100%;
 }
 
-/* Formulaire point rouge manuel */
-#red-form { 
-  position: absolute; top: 10px; left: 10px;
-  background: white; padding: 10px; border-radius: 5px; box-shadow: 0 0 10px rgba(0,0,0,0.3);
+#map {
+  width: 100%;
+  height: 100%;
 }
 
-/* GPS warning */
-#gps-warning { 
-  position: absolute; bottom: 80px; left: 50%; transform: translateX(-50%);
-  background: #e3f2fd; padding: 8px 12px; border-radius: 5px; font-weight: bold; box-shadow: 0 0 8px rgba(0,0,0,0.3);
+/* CONTENEUR UI AU-DESSUS DE LA CARTE */
+#ui-container {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  z-index: 2000;
+  pointer-events: none;
+}
+
+#ui-container > div {
+  pointer-events: auto;
+}
+
+/* POPUP ROLE SP/VICT */
+#role-popup {
+  position: absolute;
+  top: 10px;
+  left: 10px;
+  background: white;
+  padding: 10px;
+  border-radius: 5px;
+  box-shadow: 0 0 10px rgba(0,0,0,0.3);
+  display: block; /* au lancement */
+  z-index: 3000;
+}
+
+/* LOGIN SPALS */
+#login-popup {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%,-50%);
+  background: white;
+  padding: 10px;
+  border-radius: 5px;
+  box-shadow: 0 0 10px rgba(0,0,0,0.3);
+  display: none;
+  z-index: 3000;
+}
+
+/* FORMULAIRE POINT ROUGE */
+#red-popup {
+  position: absolute;
+  bottom: 80px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: white;
+  padding: 10px;
+  border-radius: 5px;
+  box-shadow: 0 0 10px rgba(0,0,0,0.3);
+  display: none;
+  z-index: 3000;
+}
+
+#red-popup input {
+  width: 90px;
+}
+
+/* FORMULAIRE POINT ROUGE MANUEL */
+#red-form {
+  position: absolute;
+  top: 10px;
+  left: 10px;
+  background: white;
+  padding: 8px;
+  border-radius: 5px;
+  box-shadow: 0 0 10px rgba(0,0,0,0.3);
+  z-index: 2000;
+}
+
+/* LAYER SELECTOR GPX */
+#layer-selector {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  background: white;
+  padding: 8px;
+  border-radius: 5px;
+  box-shadow: 0 0 10px rgba(0,0,0,0.3);
+}
+
+/* GPS WARNING */
+#gps-warning {
+  position: absolute;
+  bottom: 10px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: #e3f2fd;
+  padding: 8px 12px;
+  border-radius: 5px;
+  font-weight: bold;
+  box-shadow: 0 0 8px rgba(0,0,0,0.3);
   display: none;
 }
 
-/* Layer selector */
-#layer-selector {
-  position: absolute; top: 10px; right: 10px;
-  background: white; padding: 8px; border-radius: 5px; box-shadow: 0 0 10px rgba(0,0,0,0.3);
-}
-
-/* Admin button bottom right */
-#btn-admin { 
-  position: absolute; bottom: 10px; right: 10px;
-  background: #2196f3; color: white; border: none; padding: 8px 12px; border-radius: 5px;
-  cursor: pointer; z-index: 3000;
+/* BOUTON ADMIN */
+#btn-admin {
+  position: absolute;
+  bottom: 10px;
+  right: 10px;
+  background: #1976d2;
+  color: white;
+  border: none;
+  padding: 8px 12px;
+  border-radius: 5px;
+  cursor: pointer;
+  z-index: 3000;
 }
 </style>
 </head>
 
 <body>
+
 <div id="map"></div>
 
 <div id="ui-container">
 
-  <!-- ROLE SP / VICT -->
+  <!-- ROLE SP/VICT -->
   <div id="role-popup">
     <strong>Choisissez votre rôle</strong><br><br>
     <button id="btn-sp">SP</button>
@@ -64,7 +146,7 @@ html, body { margin: 0; padding: 0; height: 100%; }
 
   <!-- LOGIN SPALS -->
   <div id="login-popup">
-    <strong>Connexion SPALS</strong><br><br>
+    <strong>Connexion Admin</strong><br><br>
     <input type="text" id="login-id" placeholder="Identifiant"><br><br>
     <input type="password" id="login-pass" placeholder="Mot de passe"><br><br>
     <button id="login-btn">Se connecter</button>
@@ -72,7 +154,7 @@ html, body { margin: 0; padding: 0; height: 100%; }
     <p id="login-error" style="color:red; display:none;">Identifiant ou mot de passe incorrect</p>
   </div>
 
-  <!-- MENU AJOUT POINT ROUGE -->
+  <!-- FORMULAIRE POINT ROUGE -->
   <div id="red-popup">
     <strong>Ajouter un point rouge</strong><br><br>
     <input id="red-lat" placeholder="Lat">
@@ -89,9 +171,10 @@ html, body { margin: 0; padding: 0; height: 100%; }
     <input id="lng-input" placeholder="Lng">
     <input id="red-name" placeholder="Nom">
     <button id="add-red-marker">Ajouter</button>
+    <button id="btn-login">Admin Login</button>
   </div>
 
-  <!-- LAYER SELECTOR -->
+  <!-- MENU GPX + BALISE -->
   <div id="layer-selector">
     <strong>Moyens</strong><br>
     <select id="layer" multiple size="8">
@@ -110,11 +193,11 @@ html, body { margin: 0; padding: 0; height: 100%; }
 
 </div>
 
-<!-- Admin button bottom right -->
 <button id="btn-admin">Admin</button>
 
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet-gpx/1.7.0/gpx.min.js"></script>
 <script src="js/map.js"></script>
+
 </body>
 </html>
