@@ -33,34 +33,45 @@ html, body {
   pointer-events: auto;
 }
 
-/* POPUP ROLE SP/VICT */
+/* ------------------------------
+   POPUP ROLE SP/VICT (centrée)
+---------------------------------*/
 #role-popup {
   position: absolute;
-  top: 10px;
-  left: 10px;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
   background: white;
-  padding: 10px;
-  border-radius: 5px;
-  box-shadow: 0 0 10px rgba(0,0,0,0.3);
-  display: block; /* au lancement */
+  padding: 15px 20px;
+  border-radius: 6px;
+  box-shadow: 0 0 12px rgba(0,0,0,0.4);
+  display: block;
   z-index: 3000;
+  max-width: 250px;
+  text-align: center;
 }
 
-/* LOGIN SPALS */
+/* ------------------------------
+   LOGIN SPALS (centrée)
+---------------------------------*/
 #login-popup {
   position: absolute;
   top: 50%;
   left: 50%;
   transform: translate(-50%,-50%);
   background: white;
-  padding: 10px;
-  border-radius: 5px;
-  box-shadow: 0 0 10px rgba(0,0,0,0.3);
+  padding: 15px 20px;
+  border-radius: 6px;
+  box-shadow: 0 0 12px rgba(0,0,0,0.4);
   display: none;
   z-index: 3000;
+  max-width: 250px;
+  text-align: center;
 }
 
-/* FORMULAIRE POINT ROUGE */
+/* ------------------------------
+   FORMULAIRE POINT ROUGE
+---------------------------------*/
 #red-popup {
   position: absolute;
   bottom: 80px;
@@ -73,15 +84,32 @@ html, body {
   display: none;
   z-index: 3000;
 }
+#red-popup input { width: 90px; }
 
-#red-popup input {
-  width: 90px;
+/* ------------------------------
+   FORMULAIRE POINT BLANC (fixe, bas gauche)
+---------------------------------*/
+#white-point-popup {
+  position: absolute;
+  bottom: 20px;
+  left: 20px;
+  background: white;
+  padding: 12px 16px;
+  border-radius: 6px;
+  box-shadow: 0 0 12px rgba(0,0,0,0.4);
+  z-index: 3000;
+  max-width: 220px;
+  text-align: center;
 }
+#white-point-popup input { width: 100px; margin: 2px; }
+#white-point-popup button { margin-top: 4px; cursor: pointer; }
 
-/* FORMULAIRE POINT ROUGE MANUEL */
+/* ------------------------------
+   FORMULAIRE POINT ROUGE MANUEL
+---------------------------------*/
 #red-form {
   position: absolute;
-  bottom: 30px; /* décalé du bas */
+  bottom: 30px;
   left: 50%;
   transform: translateX(-50%);
   background: white;
@@ -91,18 +119,8 @@ html, body {
   z-index: 2000;
   max-width: 300px;
 }
-
-#red-form input {
-  width: 120px;
-  margin: 2px;
-}
-
-#red-form button {
-  margin-top: 4px;
-  margin-right: 4px;
-  cursor: pointer;
-}
-
+#red-form input { width: 120px; margin: 2px; }
+#red-form button { margin-top: 4px; margin-right: 4px; cursor: pointer; }
 
 /* LAYER SELECTOR GPX */
 #layer-selector {
@@ -151,14 +169,14 @@ html, body {
 
 <div id="ui-container">
 
-  <!-- ROLE SP/VICT -->
+  <!-- ROLE SP/VICT (centrée) -->
   <div id="role-popup">
     <strong>Choisissez votre rôle</strong><br><br>
     <button id="btn-sp">SP</button>
     <button id="btn-vict">VICT</button>
   </div>
 
-  <!-- LOGIN SPALS -->
+  <!-- LOGIN SPALS (centrée) -->
   <div id="login-popup">
     <strong>Connexion Admin</strong><br><br>
     <input type="text" id="login-id" placeholder="Identifiant"><br><br>
@@ -179,8 +197,16 @@ html, body {
     <button id="red-close-btn">Fermer</button>
   </div>
 
- 
-<!-- FORMULAIRE POINT ROUGE MANUEL -->
+  <!-- FORMULAIRE POINT BLANC FIXE (visible pour tous) -->
+  <div id="white-point-popup">
+    <strong>Ajouter un point blanc</strong><br><br>
+    <input id="white-lat" placeholder="Lat">
+    <input id="white-lng" placeholder="Lng"><br><br>
+    <input id="white-name" placeholder="Nom">
+    <button id="white-add-btn">Ajouter</button>
+  </div>
+
+  <!-- FORMULAIRE POINT ROUGE MANUEL -->
   <div id="red-form" style="display:block;">
     <strong>Ajouter un point manuel</strong><br><br>
     <input id="lat-input" placeholder="Lat">
@@ -189,7 +215,6 @@ html, body {
     <button id="add-red-marker">Ajouter</button>
     <button id="btn-login">Admin Login</button>
   </div>
-
 
   <!-- MENU GPX + BALISE -->
   <div id="layer-selector">
@@ -207,7 +232,6 @@ html, body {
   </div>
 
   <div id="gps-warning"></div>
-
 </div>
 
 <button id="btn-admin">Admin</button>
