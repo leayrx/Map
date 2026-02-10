@@ -9,7 +9,6 @@ const TRACK_INTERVAL = 5000; // 5s
 // MAP
 // =====================
 const map = L.map("map").setView([46.6, 2.2], 6);
-
 L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
   attribution: "© OpenStreetMap"
 }).addTo(map);
@@ -61,29 +60,27 @@ function sendPosition(lat, lng, name, color, accuracy, photo=null) {
   });
 }
 
-async function loadPositions() {
-  const res = await fetch(webAppURL);
-  const data = await res.json();
-  data.forEach(p => {
-    const marker = L.marker([p.lat, p.lng], { 
-      icon: icons[p.color], 
-      draggable: p.color === 'red' && isSPALS 
-    }).addTo(map);
-
-    marker.bindPopup(() => {
-      let html = `${p.name}<br>± ${(p.accuracy / 1000).toFixed(2)} km`;
-      if(p.photo) html += `<br><img src="${p.photo}" width="100">`;
-      if(isSPALS && p.color === 'red') html += `<br><button onclick="deleteMarker('${p.name}')">Supprimer</button>`;
-      return html;
-    });
-
-    if(p.color === 'red' && isSPALS){
-      marker.on('dragend', e => {
-        const pos = e.target.getLatLng();
-        sendPosition(pos.lat, pos.lng, p.name, p.color, p.accuracy, p.photo);
+function loadPositions() {
+  fetch(webAppURL)
+    .then(r => r.json())
+    .then(data => {
+      data.forEach(p => {
+        const marker = L.marker([p.lat, p.lng], { icon: icons[p.color], draggable: p.color === 'red' && isSPALS })
+          .addTo(map)
+          .bindPopup(() => {
+            let html = `${p.name}<br>± ${(p.accuracy / 1000).toFixed(2)} km`;
+            if(p.photo) html += `<br><img src="${p.photo}" width="100">`;
+            if(isSPALS && p.color==='red') html += `<br><button onclick="deleteMarker('${p.name}')">Supprimer</button>`;
+            return html;
+          });
+        if(p.color === 'red' && isSPALS){
+          marker.on('dragend', e => {
+            const pos = e.target.getLatLng();
+            sendPosition(pos.lat, pos.lng, p.name, p.color, p.accuracy, p.photo);
+          });
+        }
       });
-    }
-  });
+    });
 }
 
 // =====================
@@ -122,7 +119,7 @@ map.on("locationfound", e => {
   if(!currentMarker){
     currentMarker = L.marker(e.latlng, { icon: icons[currentColor] })
       .addTo(map)
-      .bindPopup(`${currentName}<br>± ${(acc/1000).toFixed(2)} km`)
+      .bindPopup(() => `${currentName}<br>± ${(acc/1000).toFixed(2)} km`)
       .openPopup();
   } else {
     currentMarker.setLatLng(e.latlng);
@@ -152,7 +149,7 @@ document.getElementById("btn-vict").onclick = () => {
 };
 
 // =====================
-// ADMIN BUTTON pour afficher LOGIN SPALS
+// LOGIN SPALS
 // =====================
 document.getElementById("btn-admin").onclick = () => {
   document.getElementById("login-popup").style.display = "block";
@@ -169,14 +166,14 @@ document.getElementById("login-btn").onclick = () => {
     isSPALS = true;
     document.getElementById("login-popup").style.display = "none";
     document.getElementById("red-popup").style.display = "block";
-    loadPositions(); // recharge avec possibilité drag
+    loadPositions();
   } else {
     document.getElementById("login-error").style.display = "block";
   }
 };
 
 // =====================
-// AJOUT POINT ROUGE
+// POINT ROUGE AVANCÉ
 // =====================
 document.getElementById("red-add-btn").onclick = async () => {
   const lat = parseFloat(document.getElementById("red-lat").value);
@@ -195,14 +192,13 @@ document.getElementById("red-add-btn").onclick = async () => {
   }
 
   const marker = L.marker([lat,lng], { icon: icons.red, draggable: true })
-    .addTo(map);
-
-  marker.bindPopup(() => {
-    let html = `${title}`;
-    if(photoData) html += `<br><img src="${photoData}" width="100">`;
-    if(isSPALS) html += `<br><button onclick="deleteMarker('${title}')">Supprimer</button>`;
-    return html;
-  });
+    .addTo(map)
+    .bindPopup(() => {
+      let html = `${title}`;
+      if(photoData) html += `<br><img src="${photoData}" width="100">`;
+      if(isSPALS) html += `<br><button onclick="deleteMarker('${title}')">Supprimer</button>`;
+      return html;
+    });
 
   marker.on('dragend', e => {
     const pos = e.target.getLatLng();
@@ -230,8 +226,9 @@ document.getElementById("add-red-marker").onclick = () => {
     return;
   }
 
-  const marker = L.marker([lat, lng], { icon: icons.red }).addTo(map);
-  marker.bindPopup(name);
+  L.marker([lat, lng], { icon: icons.red })
+    .addTo(map)
+    .bindPopup(name);
 
   sendPosition(lat, lng, name, "red", 0);
 };
@@ -251,15 +248,11 @@ selector.addEventListener("change", () => {
 
   selected.forEach(name => {
     if(name === 'BALISE'){
-      loadPositions(); // recharge tous les points rouges visibles
+      loadPositions();
     } else if(!gpxLayers[name]){
       gpxLayers[name] = new L.GPX(`gpx/${name}.gpx`, {
         async: true,
-        polyline_options: {
-          color: getColor(name),
-          weight: 4,
-          opacity: 0.7
-        }
+        polyline_options: { color: getColor(name), weight: 4, opacity: 0.7 }
       }).addTo(map);
     } else {
       map.addLayer(gpxLayers[name]);
@@ -288,7 +281,7 @@ window.deleteMarker = function(name){
     .then(res => {
       if(res === "OK"){
         alert("Point supprimé !");
-        loadPositions(); // recharge carte
+        loadPositions();
       } else {
         alert("Point introuvable");
       }
@@ -296,14 +289,6 @@ window.deleteMarker = function(name){
 };
 
 function getColor(name){
-  const colors = {
-    PIETON: "orange",
-    VLI: "blue",
-    VLTT: "green",
-    VSAV: "red",
-    CTU: "purple",
-    FPT: "black",
-    CCF: "brown"
-  };
+  const colors = { PIETON:"orange", VLI:"blue", VLTT:"green", VSAV:"red", CTU:"purple", FPT:"black", CCF:"brown" };
   return colors[name] || "gray";
 }
