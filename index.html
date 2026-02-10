@@ -19,7 +19,7 @@ html, body {
   height: 100%;
 }
 
-/* CONTENEUR UI AU-DESSUS DE LA CARTE */
+/* UI au-dessus de la carte */
 #ui-container {
   position: absolute;
   top: 0;
@@ -33,7 +33,7 @@ html, body {
   pointer-events: auto;
 }
 
-/* POPUP ROLE */
+/* Popup rôle SP/VICT */
 #role-popup, #login-popup, #red-popup {
   position: absolute;
   top: 10px;
@@ -47,7 +47,7 @@ html, body {
   z-index: 3000;
 }
 
-/* FORMULAIRE POINT ROUGE */
+/* Formulaire point rouge manuel */
 #red-form {
   position: absolute;
   bottom: 10px;
@@ -63,7 +63,7 @@ html, body {
   width: 90px;
 }
 
-/* SELECTEUR CALQUES GPX */
+/* Layer selector */
 #layer-selector {
   position: absolute;
   top: 10px;
@@ -74,7 +74,7 @@ html, body {
   box-shadow: 0 0 10px rgba(0,0,0,0.3);
 }
 
-/* POPUP INFO GPS */
+/* GPS warning */
 #gps-warning {
   position: absolute;
   bottom: 80px;
@@ -88,16 +88,12 @@ html, body {
   display: none;
 }
 
-/* BOUTON ADMIN BAS-DROITE */
+/* Admin bouton bas droite */
 #admin-btn-container {
   position: absolute;
   bottom: 10px;
   right: 10px;
   z-index: 3000;
-}
-#admin-btn-container button {
-  padding: 6px 10px;
-  font-weight: bold;
 }
 </style>
 </head>
@@ -109,7 +105,7 @@ html, body {
 <div id="ui-container">
 
   <!-- ROLE SP / VICT -->
-  <div id="role-popup">
+  <div id="role-popup" style="display:block;">
     <strong>Choisissez votre rôle</strong><br><br>
     <button id="btn-sp">SP</button>
     <button id="btn-vict">VICT</button>
@@ -159,25 +155,18 @@ html, body {
     </select>
   </div>
 
-  <!-- BOUTON ADMIN -->
-  <div id="admin-btn-container">
-    <button id="btn-admin">Admin</button>
-  </div>
-
   <div id="gps-warning"></div>
 
+</div>
+
+<!-- Admin bouton bas droite -->
+<div id="admin-btn-container">
+  <button id="btn-admin">Admin</button>
 </div>
 
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet-gpx/1.7.0/gpx.min.js"></script>
 <script src="js/map.js"></script>
-
-<script>
-// bouton Admin ouvre le login
-document.getElementById("btn-admin").onclick = () => {
-  document.getElementById("login-popup").style.display = "block";
-};
-</script>
 
 </body>
 </html>

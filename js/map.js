@@ -70,7 +70,7 @@ function loadPositions() {
           .bindPopup(() => {
             let html = `${p.name}<br>± ${(p.accuracy / 1000).toFixed(2)} km`;
             if(p.photo) html += `<br><img src="${p.photo}" width="100">`;
-            if(isSPALS && p.color==='red') html += `<br><button onclick="deleteMarker('${p.name}')">Supprimer</button>`;
+            if(isSPALS && p.color === 'red') html += `<br><button onclick="deleteMarker('${p.name}')">Supprimer</button>`;
             return html;
           });
         if(p.color === 'red' && isSPALS){
@@ -105,7 +105,6 @@ function locateOnce() {
 // =====================
 map.on("locationfound", e => {
   if(!currentName || !currentColor) return;
-
   const acc = e.accuracy;
 
   if(acc > MAX_ACCURACY){
@@ -149,12 +148,15 @@ document.getElementById("btn-vict").onclick = () => {
 };
 
 // =====================
-// LOGIN SPALS
+// ADMIN BUTTON
 // =====================
 document.getElementById("btn-admin").onclick = () => {
   document.getElementById("login-popup").style.display = "block";
 };
 
+// =====================
+// LOGIN SPALS
+// =====================
 document.getElementById("login-cancel").onclick = () => {
   document.getElementById("login-popup").style.display = "none";
 };
@@ -166,14 +168,14 @@ document.getElementById("login-btn").onclick = () => {
     isSPALS = true;
     document.getElementById("login-popup").style.display = "none";
     document.getElementById("red-popup").style.display = "block";
-    loadPositions();
+    loadPositions(); // recharge avec possibilité drag
   } else {
     document.getElementById("login-error").style.display = "block";
   }
 };
 
 // =====================
-// POINT ROUGE AVANCÉ
+// FORMULAIRES POINT ROUGE
 // =====================
 document.getElementById("red-add-btn").onclick = async () => {
   const lat = parseFloat(document.getElementById("red-lat").value);
@@ -213,28 +215,20 @@ document.getElementById("red-close-btn").onclick = () => {
   document.getElementById("red-popup").style.display = "none";
 };
 
-// =====================
-// POINT ROUGE MANUEL
-// =====================
 document.getElementById("add-red-marker").onclick = () => {
   const lat = parseFloat(document.getElementById("lat-input").value);
   const lng = parseFloat(document.getElementById("lng-input").value);
   const name = document.getElementById("red-name").value;
-
   if(isNaN(lat) || isNaN(lng) || !name){
     alert("Champs invalides");
     return;
   }
-
-  L.marker([lat, lng], { icon: icons.red })
-    .addTo(map)
-    .bindPopup(name);
-
+  L.marker([lat, lng], { icon: icons.red }).addTo(map).bindPopup(name);
   sendPosition(lat, lng, name, "red", 0);
 };
 
 // =====================
-// GPX MULTI-CALQUES + BALISE
+// GPX LAYERS
 // =====================
 const gpxLayers = {};
 const selector = document.getElementById("layer");
