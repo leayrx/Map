@@ -1,7 +1,7 @@
 // =====================
 // CONFIG
 // =====================
-const webAppURL = "https://script.google.com/macros/s/TON_URL/exec"; // remplacer par ton URL de webapp
+const webAppURL = "https://script.google.com/macros/s/AKfycbxW8DagSknAsjkKpcnRk1JkaTTbc3I_3xoOBo4BNuowL9Vq8_x0qcMetYCxblnsxZMW/exec"; // remplacer par ton URL de webapp
 const MAX_ACCURACY = 10000; // 10 km
 const TRACK_INTERVAL = 5000; // 5s
 
