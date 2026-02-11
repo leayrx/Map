@@ -79,7 +79,7 @@ html, body {
 /* ------------------------------
    FORMULAIRE POINT BLANC (fixe, bas gauche)
 ---------------------------------*/
-#white-point-popup {
+/*#white-point-popup {
     position: absolute; 
   top: 550px; left: 15%; 
   transform: translateX(-50%); 
@@ -89,7 +89,29 @@ html, body {
   box-shadow: 0 0 10px rgba(0,0,0,0.3);
 }
 #white-point-popup input { width: 100px; margin: 2px; }
-#white-point-popup button { margin-top: 4px; cursor: pointer; }
+#white-point-popup button { margin-top: 4px; cursor: pointer; }*/
+
+#white-point-popup {
+    position: absolute; 
+    bottom: 550px;          /* fixe en bas de l'écran */
+    left: 9%;             /* centré horizontalement */
+    transform: translateX(-50%);
+    background: white; 
+    padding: 10px;  
+    border: none;
+    box-shadow: 0 0 10px rgba(0,0,0,0.3);
+    max-width: 90%;        /* largeur max 90% de l'écran */
+    box-sizing: border-box;
+}
+#white-point-popup input { 
+    width: 100%;            /* s'adapte à la largeur du conteneur */
+    margin: 2px 0; 
+}
+#white-point-popup button { 
+    width: 100%;            /* bouton full width */
+    margin-top: 4px; 
+    cursor: pointer; 
+}
 
 /* ------------------------------
    FORMULAIRE POINT ROUGE MANUEL

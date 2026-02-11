@@ -189,36 +189,31 @@ document.getElementById("login-btn").onclick = () => {
 };
 
 // =====================
-// AJOUT POINT ROUGE MANUEL
+// AJOUT POINT ROUGE MANUEL (formulaire en bas)
 // =====================
-document.addEventListener("DOMContentLoaded", () => {
-  const addRedBtn = document.getElementById("add-red-marker");
+document.getElementById("add-red-marker").onclick = async () => {
+  const lat = parseFloat(document.getElementById("lat-input").value);
+  const lng = parseFloat(document.getElementById("lng-input").value);
+  const name = document.getElementById("red-name").value;
 
-  addRedBtn.onclick = async () => {
-    const lat = parseFloat(document.getElementById("lat-input").value);
-    const lng = parseFloat(document.getElementById("lng-input").value);
-    const name = document.getElementById("red-name").value;
+  if(isNaN(lat) || isNaN(lng) || !name){
+    alert("Veuillez entrer un nom et des coordonnées valides !");
+    return;
+  }
 
-    if (isNaN(lat) || isNaN(lng) || !name) {
-      alert("Champs invalides !");
-      return;
-    }
+  // Appelle la fonction existante pour envoyer la position
+  await sendPosition(lat, lng, name, "red", 0, null);
 
-    // Envoi du point rouge (pas de photo ici, accuracy = 0)
-    await sendPosition(lat, lng, name, "red", 0, null);
+  alert("Point rouge ajouté !");
+  
+  // Recharge la carte pour voir le point immédiatement
+  await loadPositions();
 
-    alert("Point rouge ajouté !");
-
-    // Recharger la carte pour afficher le point immédiatement
-    await loadPositions();
-
-    // Réinitialiser le formulaire
-    document.getElementById("lat-input").value = "";
-    document.getElementById("lng-input").value = "";
-    document.getElementById("red-name").value = "";
-  };
-});
-
+  // Réinitialiser le formulaire
+  document.getElementById("lat-input").value = "";
+  document.getElementById("lng-input").value = "";
+  document.getElementById("red-name").value = "";
+};
 
 // =====================
 // SUPPRESSION MARKER
