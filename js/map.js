@@ -67,7 +67,7 @@ async function loadPositions(){
   const r = await fetch(webAppURL);
   const data = await r.json();
 
-  // Supprimer anciens markers (sauf celui du SP/VICT en cours)
+  // Supprimer anciens markers sauf le SP/VICT actuel
   map.eachLayer(layer => {
     if(layer instanceof L.Marker && layer !== currentMarker) map.removeLayer(layer);
   });
@@ -77,9 +77,11 @@ async function loadPositions(){
     const marker = L.marker([p.lat, p.lng], {icon: icons[p.color || "red"], draggable})
                     .addTo(map)
                     .bindPopup(() => {
-                      let html = `${p.name}<br>± ${(p.accuracy/1000).toFixed(2)} km`;
+                      let html = `${p.name}`;
+                      if(p.color === "blue" || p.color === "green") html += `<br>± ${(p.accuracy/1000).toFixed(2)} km`;
+                      else html += `<br>Lat: ${p.lat.toFixed(5)}, Lng: ${p.lng.toFixed(5)}`;
                       if(p.photo) html += `<br><img src="${p.photo}" width="100">`;
-                      if(draggable) html += `<br><button onclick="deleteMarker('${p.name}')">Supprimer</button>`;
+                      if(draggable || isAdmin) html += `<br><button onclick="deleteMarker('${p.name}')">Supprimer</button>`;
                       return html;
                     });
 
@@ -127,7 +129,6 @@ map.on("locationfound", e => {
     currentMarker.setPopupContent(`${currentName}<br>± ${(acc/1000).toFixed(2)} km`);
   }
 
-  // Photo = null pour SP/VICT
   sendPosition(e.latlng.lat, e.latlng.lng, currentName, currentColor, acc, null);
 });
 
@@ -199,7 +200,7 @@ async function fileToBase64(file){
   });
 }
 
-document.getElementById("red-add-btn").onclick = async ()=>{
+document.getElementById("red-add-btn").onclick = async () => {
   const lat = parseFloat(document.getElementById("red-lat").value);
   const lng = parseFloat(document.getElementById("red-lng").value);
   const title = document.getElementById("red-title").value;
@@ -213,15 +214,15 @@ document.getElementById("red-add-btn").onclick = async ()=>{
   let photoData = null;
   if(photoFile) photoData = await fileToBase64(photoFile);
 
-  // 🔹 attendre que le point soit ajouté
+  // Ajouter le point rouge dans le Google Sheet
   await sendPosition(lat, lng, title, "red", 0, photoData);
 
   alert("Point rouge ajouté !");
-  
-  // 🔹 recharger la carte pour voir le point immédiatement
+
+  // Recharger les markers
   await loadPositions();
 
-  // 🔹 réinitialiser le formulaire
+  // Réinitialiser le formulaire
   document.getElementById("red-lat").value = "";
   document.getElementById("red-lng").value = "";
   document.getElementById("red-title").value = "";
