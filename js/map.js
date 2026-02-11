@@ -191,15 +191,15 @@ document.getElementById("login-btn").onclick = () => {
 // POINT ROUGE AVEC PHOTO
 // =====================
 async function fileToBase64(file){
-  return new Promise((res, rej) => {
+  return new Promise((res, rej)=>{
     const reader = new FileReader();
-    reader.onload = () => res(reader.result);
-    reader.onerror = e => rej(e);
+    reader.onload = ()=>res(reader.result);
+    reader.onerror = e=>rej(e);
     reader.readAsDataURL(file);
   });
 }
 
-document.getElementById("red-add-btn").onclick = async () => {
+document.getElementById("red-add-btn").onclick = async ()=>{
   const lat = parseFloat(document.getElementById("red-lat").value);
   const lng = parseFloat(document.getElementById("red-lng").value);
   const title = document.getElementById("red-title").value;
@@ -213,12 +213,23 @@ document.getElementById("red-add-btn").onclick = async () => {
   let photoData = null;
   if(photoFile) photoData = await fileToBase64(photoFile);
 
+  // 🔹 attendre que le point soit ajouté
   await sendPosition(lat, lng, title, "red", 0, photoData);
+
   alert("Point rouge ajouté !");
-  loadPositions();
+  
+  // 🔹 recharger la carte pour voir le point immédiatement
+  await loadPositions();
+
+  // 🔹 réinitialiser le formulaire
+  document.getElementById("red-lat").value = "";
+  document.getElementById("red-lng").value = "";
+  document.getElementById("red-title").value = "";
+  document.getElementById("red-photo").value = null;
 };
 
-document.getElementById("red-close-btn").onclick = () => {
+// Fermeture popup
+document.getElementById("red-close-btn").onclick = ()=>{
   document.getElementById("red-popup").style.display="none";
 };
 
