@@ -51,7 +51,7 @@ function showGpsInfo(meters){
 }
 
 // =====================
-// SEND POSITION (POST JSON)
+// SEND POSITION
 // =====================
 async function sendPosition(lat, lng, name, color, accuracy, photo=null){
   await fetch(webAppURL, {
@@ -67,7 +67,7 @@ async function loadPositions(){
   const r = await fetch(webAppURL);
   const data = await r.json();
 
-  // Supprimer tous les markers sauf celui de SP/VICT
+  // Supprimer tous les markers sauf SP/VICT actuel
   map.eachLayer(layer => {
     if(layer instanceof L.Marker && layer !== currentMarker) map.removeLayer(layer);
   });
@@ -196,55 +196,46 @@ document.getElementById("red-close-btn").onclick = () => {
 };
 
 // =====================
-// AJOUT POINT ROUGE MANUEL (admin)
+// AJOUT POINT ROUGE (ADMIN)
 // =====================
-document.addEventListener("DOMContentLoaded", () => {
-  const addRedBtn = document.getElementById("add-red-marker");
+document.getElementById("red-add-btn").onclick = async (e) => {
+  e.preventDefault();
 
-  addRedBtn.addEventListener("click", async (e) => {
-    e.preventDefault(); // empêche tout rechargement de page
+  const lat = parseFloat(document.getElementById("red-lat").value);
+  const lng = parseFloat(document.getElementById("red-lng").value);
+  const name = document.getElementById("red-title").value;
 
-    const lat = parseFloat(document.getElementById("lat-input").value);
-    const lng = parseFloat(document.getElementById("lng-input").value);
-    const name = document.getElementById("red-name").value;
+  if(isNaN(lat) || isNaN(lng) || !name){
+    alert("Veuillez entrer un nom et des coordonnées valides !");
+    return;
+  }
 
-    if (isNaN(lat) || isNaN(lng) || !name) {
-      alert("Veuillez entrer un nom et des coordonnées valides !");
-      return;
-    }
+  try {
+    await sendPosition(lat, lng, name, "red", 0, null);
 
-    try {
-      // Envoi au serveur
-      await sendPosition(lat, lng, name, "red", 0, null);
+    // ajouter directement le marker
+    const marker = L.marker([lat, lng], {icon: icons.red, draggable: true})
+      .addTo(map)
+      .bindPopup(`${name}<br>Lat: ${lat.toFixed(5)}, Lng: ${lng.toFixed(5)}
+                  <br><button onclick="deleteMarker('${name}')">Supprimer</button>`);
 
-      // Ajouter directement le marker sur la carte pour voir immédiatement
-      const marker = L.marker([lat, lng], {icon: icons.red, draggable: true})
-        .addTo(map)
-        .bindPopup(() => {
-          return `${name}<br>Lat: ${lat.toFixed(5)}, Lng: ${lng.toFixed(5)}
-                  <br><button onclick="deleteMarker('${name}')">Supprimer</button>`;
-        });
+    marker.on('dragend', async (ev) => {
+      const pos = ev.target.getLatLng();
+      await sendPosition(pos.lat, pos.lng, name, "red", 0, null);
+    });
 
-      marker.on('dragend', async (ev) => {
-        const pos = ev.target.getLatLng();
-        await sendPosition(pos.lat, pos.lng, name, "red", 0, null);
-      });
+    alert("Point rouge ajouté !");
+    document.getElementById("red-lat").value = "";
+    document.getElementById("red-lng").value = "";
+    document.getElementById("red-title").value = "";
 
-      alert("Point rouge ajouté !");
-      
-      // reset form
-      document.getElementById("lat-input").value = "";
-      document.getElementById("lng-input").value = "";
-      document.getElementById("red-name").value = "";
+    await loadPositions();
 
-    } catch (err) {
-      console.error(err);
-      alert("Erreur lors de l'ajout du point rouge !");
-    }
-  });
-});
-
-
+  } catch(err){
+    console.error(err);
+    alert("Erreur lors de l'ajout du point rouge !");
+  }
+};
 
 // =====================
 // SUPPRESSION MARKER
