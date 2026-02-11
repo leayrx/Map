@@ -189,50 +189,36 @@ document.getElementById("login-btn").onclick = () => {
 };
 
 // =====================
-// POINT ROUGE AVEC PHOTO
+// AJOUT POINT ROUGE MANUEL
 // =====================
-async function fileToBase64(file){
-  return new Promise((res, rej)=>{
-    const reader = new FileReader();
-    reader.onload = ()=>res(reader.result);
-    reader.onerror = e=>rej(e);
-    reader.readAsDataURL(file);
-  });
-}
+document.addEventListener("DOMContentLoaded", () => {
+  const addRedBtn = document.getElementById("add-red-marker");
 
-document.getElementById("red-add-btn").onclick = async () => {
-  const lat = parseFloat(document.getElementById("red-lat").value);
-  const lng = parseFloat(document.getElementById("red-lng").value);
-  const title = document.getElementById("red-title").value;
-  const photoFile = document.getElementById("red-photo").files[0];
+  addRedBtn.onclick = async () => {
+    const lat = parseFloat(document.getElementById("lat-input").value);
+    const lng = parseFloat(document.getElementById("lng-input").value);
+    const name = document.getElementById("red-name").value;
 
-  if(isNaN(lat) || isNaN(lng) || !title){
-    alert("Champs invalides");
-    return;
-  }
+    if (isNaN(lat) || isNaN(lng) || !name) {
+      alert("Champs invalides !");
+      return;
+    }
 
-  let photoData = null;
-  if(photoFile) photoData = await fileToBase64(photoFile);
+    // Envoi du point rouge (pas de photo ici, accuracy = 0)
+    await sendPosition(lat, lng, name, "red", 0, null);
 
-  // Ajouter le point rouge dans le Google Sheet
-  await sendPosition(lat, lng, title, "red", 0, photoData);
+    alert("Point rouge ajouté !");
 
-  alert("Point rouge ajouté !");
+    // Recharger la carte pour afficher le point immédiatement
+    await loadPositions();
 
-  // Recharger les markers
-  await loadPositions();
+    // Réinitialiser le formulaire
+    document.getElementById("lat-input").value = "";
+    document.getElementById("lng-input").value = "";
+    document.getElementById("red-name").value = "";
+  };
+});
 
-  // Réinitialiser le formulaire
-  document.getElementById("red-lat").value = "";
-  document.getElementById("red-lng").value = "";
-  document.getElementById("red-title").value = "";
-  document.getElementById("red-photo").value = null;
-};
-
-// Fermeture popup
-document.getElementById("red-close-btn").onclick = ()=>{
-  document.getElementById("red-popup").style.display="none";
-};
 
 // =====================
 // SUPPRESSION MARKER
