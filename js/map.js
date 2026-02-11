@@ -61,47 +61,57 @@ async function sendPosition(lat, lng, name, color, accuracy, photo=null){
 }
 
 // =====================
-// LOAD ALL POSITIONS (avec calques)
+// LAYERS
+// =====================
+let gpxLayers = {};           // GPX
+let sheetLayer = L.layerGroup().addTo(map); // markers Google Sheet
+
+// =====================
+// LOAD ALL POSITIONS
 // =====================
 async function loadPositions(){
-  const r = await fetch(webAppURL);
-  const data = await r.json();
+  try {
+    const r = await fetch(webAppURL);
+    const data = await r.json();
 
-  // Supprimer tous les markers sauf SP/VICT actuel
-  map.eachLayer(layer => {
-    if(layer instanceof L.Marker && layer !== currentMarker) map.removeLayer(layer);
-  });
+    // On garde le SP/VICT actuel
+    const savedCurrentMarker = currentMarker;
 
-  // Vider les calques
-  Object.values(vehicleLayers).forEach(lg => lg.clearLayers());
+    // Supprimer seulement les anciens markers Sheet
+    sheetLayer.clearLayers();
 
-  data.forEach(p => {
-    const draggable = (p.color === "red" && isAdmin);
-    const marker = L.marker([p.lat, p.lng], {icon: icons[p.color || "red"], draggable})
-      .bindPopup(() => {
-        let html = `${p.name}`;
-        if(p.color === "blue" || p.color === "green") html += `<br>± ${(p.accuracy/1000).toFixed(2)} km`;
-        else html += `<br>Lat: ${p.lat.toFixed(5)}, Lng: ${p.lng.toFixed(5)}`;
-        if(p.photo) html += `<br><img src="${p.photo}" width="100">`;
-        if(draggable || isAdmin) html += `<br><button onclick="deleteMarker('${p.name}')">Supprimer</button>`;
-        return html;
-      });
+    data.forEach(p => {
+      const draggable = (p.color === "red" && isAdmin);
 
-    if(draggable){
-      marker.on('dragend', e => {
-        const pos = e.target.getLatLng();
-        sendPosition(pos.lat, pos.lng, p.name, p.color, p.accuracy, p.photo);
-      });
-    }
+      // Créer le marker
+      const marker = L.marker([p.lat, p.lng], {icon: icons[p.color || "red"], draggable})
+        .bindPopup(() => {
+          let html = `${p.name}`;
+          if(p.color === "blue" || p.color === "green") html += `<br>± ${(p.accuracy/1000).toFixed(2)} km`;
+          else html += `<br>Lat: ${p.lat.toFixed(5)}, Lng: ${p.lng.toFixed(5)}`;
+          if(p.photo) html += `<br><img src="${p.photo}" width="100">`;
+          if(draggable || isAdmin) html += `<br><button onclick="deleteMarker('${p.name}')">Supprimer</button>`;
+          return html;
+        });
 
-    // Ajouter le marker au bon calque si type défini
-    if(p.type && vehicleLayers[p.type]){
-      vehicleLayers[p.type].addLayer(marker);
-    } else {
-      // sinon on le met directement sur la carte
-      marker.addTo(map);
-    }
-  });
+      if(draggable){
+        marker.on('dragend', e => {
+          const pos = e.target.getLatLng();
+          sendPosition(pos.lat, pos.lng, p.name, p.color, p.accuracy, p.photo);
+        });
+      }
+
+      // SP et VICT actuels ne sont jamais supprimés
+      if(savedCurrentMarker && p.name === currentName){
+        savedCurrentMarker.setLatLng([p.lat, p.lng]);
+        savedCurrentMarker.setPopupContent(`${currentName}<br>± ${(p.accuracy/1000).toFixed(2)} km`);
+      } else {
+        sheetLayer.addLayer(marker);
+      }
+    });
+  } catch(err){
+    console.error("Erreur loadPositions:", err);
+  }
 }
 
 // =====================
@@ -198,14 +208,7 @@ document.getElementById("login-btn").onclick = () => {
 };
 
 // =====================
-// FERMER POPUP RED
-// =====================
-document.getElementById("red-close-btn").onclick = () => {
-  document.getElementById("red-popup").style.display = "none";
-};
-
-// =====================
-// AJOUT POINT ROUGE (ADMIN)
+// AJOUT / SUPPRESSION POINT ROUGE (ADMIN)
 // =====================
 document.getElementById("red-add-btn").onclick = async (e) => {
   e.preventDefault();
@@ -222,9 +225,8 @@ document.getElementById("red-add-btn").onclick = async (e) => {
   try {
     await sendPosition(lat, lng, name, "red", 0, null);
 
-    // ajouter directement le marker
     const marker = L.marker([lat, lng], {icon: icons.red, draggable: true})
-      .addTo(map)
+      .addTo(sheetLayer)
       .bindPopup(`${name}<br>Lat: ${lat.toFixed(5)}, Lng: ${lng.toFixed(5)}
                   <br><button onclick="deleteMarker('${name}')">Supprimer</button>`);
 
@@ -246,9 +248,6 @@ document.getElementById("red-add-btn").onclick = async (e) => {
   }
 };
 
-// =====================
-// SUPPRESSION MARKER
-// =====================
 window.deleteMarker = async function(name){
   if(!isAdmin) return alert("Seul Admin peut supprimer");
   if(!confirm(`Supprimer "${name}" ?`)) return;
@@ -261,10 +260,8 @@ window.deleteMarker = async function(name){
 };
 
 // =====================
-// AFFICHAGE CALQUES
+// AFFICHAGE CALQUES GPX
 // =====================
-let gpxLayers = {}; // pour stocker les calques chargés
-
 const selector = document.getElementById("layer");
 
 selector.addEventListener("change", function() {
@@ -284,17 +281,15 @@ selector.addEventListener("change", function() {
         async: true,
         polyline_options: { color: getColorForGPX(name), weight: 4, opacity: 0.7 }
       }).on('loaded', function(e){
-        // ne pas re-centrer la carte à chaque calque pour multi-sélection
-        // map.fitBounds(e.target.getBounds());
+        // ne pas re-centrer la carte à chaque calque
       }).addTo(map);
       gpxLayers[name] = gpx;
     } else {
-      map.addLayer(gpxLayers[name]); // ré-affiche le calque déjà chargé
+      map.addLayer(gpxLayers[name]);
     }
   });
 });
 
-// Exemple : couleur différente selon le moyen
 function getColorForGPX(name){
   const colors = {
     Pieton: "blue",
@@ -307,11 +302,6 @@ function getColorForGPX(name){
   };
   return colors[name] || "gray";
 }
-// =====================
-// INITIAL LOAD
-// =====================
-loadPositions();
-
 
 // =====================
 // INITIAL LOAD
