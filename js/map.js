@@ -252,6 +252,42 @@ window.deleteMarker = async function(name){
 };
 
 // =====================
+// AFFICHAGE CALQUES
+// =====================
+// Layer groups pour chaque type
+const vehicleLayers = {
+  PIETON: L.layerGroup().addTo(map),
+  VLI: L.layerGroup().addTo(map),
+  VLTT: L.layerGroup().addTo(map),
+  VSAV: L.layerGroup().addTo(map),
+  CTU: L.layerGroup().addTo(map),
+  FPT: L.layerGroup().addTo(map),
+  CCF: L.layerGroup().addTo(map),
+  BALISE: L.layerGroup().addTo(map)
+};
+
+// Quand on charge les positions
+data.forEach(p => {
+  if(p.type && vehicleLayers[p.type]){
+    const marker = L.marker([p.lat, p.lng], {icon: icons.red}).bindPopup(p.name);
+    vehicleLayers[p.type].addLayer(marker);
+  }
+});
+
+// Filtrer selon le select
+document.getElementById("layer").addEventListener("change", () => {
+  const selected = Array.from(document.getElementById("layer").selectedOptions).map(opt=>opt.value);
+  Object.keys(vehicleLayers).forEach(type => {
+    if(selected.includes(type)){
+      vehicleLayers[type].addTo(map);
+    } else {
+      map.removeLayer(vehicleLayers[type]);
+    }
+  });
+});
+
+
+// =====================
 // INITIAL LOAD
 // =====================
 loadPositions();
