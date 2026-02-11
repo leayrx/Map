@@ -1,7 +1,7 @@
 // =====================
 // CONFIG
 // =====================
-const webAppURL = "https://script.google.com/macros/s/AKfycbxW8DagSknAsjkKpcnRk1JkaTTbc3I_3xoOBo4BNuowL9Vq8_x0qcMetYCxblnsxZMW/exec"; // remplacer par ton URL de webapp
+const webAppURL = "https://script.google.com/macros/s/TON_URL/exec"; // remplacer par ton URL de webapp
 const MAX_ACCURACY = 10000; // 10 km
 const TRACK_INTERVAL = 5000; // 5s
 
@@ -24,12 +24,7 @@ function createIcon(color){
     iconAnchor:[12,41]
   });
 }
-
-const icons = {
-  blue: createIcon("blue"),
-  green: createIcon("green"),
-  red: createIcon("red")
-};
+const icons = { blue:createIcon("blue"), green:createIcon("green"), red:createIcon("red") };
 
 // =====================
 // ETAT UTILISATEUR
@@ -39,6 +34,7 @@ let currentColor = null;
 let currentMarker = null;
 let trackingTimer = null;
 let isAdmin = false;
+let allMarkers = [];
 
 // =====================
 // UI GPS
@@ -53,10 +49,10 @@ function showGpsInfo(meters){
 // =====================
 // SEND POSITION (POST JSON)
 // =====================
-async function sendPosition(lat, lng, name, color, accuracy, photo=null){
-  await fetch(webAppURL, {
-    method: "POST",
-    body: JSON.stringify({lat,lng,name,color,accuracy,photo})
+async function sendPosition(lat,lng,name,color,accuracy,photo=null){
+  await fetch(webAppURL,{
+    method:"POST",
+    body:JSON.stringify({lat,lng,name,color,accuracy,photo})
   });
 }
 
@@ -67,28 +63,30 @@ async function loadPositions(){
   const r = await fetch(webAppURL);
   const data = await r.json();
 
-  // Supprimer anciens markers si besoin
-  map.eachLayer(layer=>{
-    if(layer instanceof L.Marker && layer!==currentMarker) map.removeLayer(layer);
-  });
+  // Supprime les anciens markers (sauf currentMarker)
+  allMarkers.forEach(m=>map.removeLayer(m));
+  allMarkers=[];
 
   data.forEach(p=>{
-    const draggable = (p.color === "red" && isAdmin);
-    const marker = L.marker([p.lat, p.lng], {icon: icons[p.color || "red"], draggable})
+    const draggable = (p.color==="red" && isAdmin);
+    
+    // Crée le HTML du popup avec photo
+    let html = `<b>${p.name}</b><br>± ${(p.accuracy/1000).toFixed(2)} km`;
+    if(p.photo) html += `<br><img src="${p.photo}" width="100">`;
+    if(draggable) html += `<br><button onclick="deleteMarker('${p.name}')">Supprimer</button>`;
+
+    const marker = L.marker([p.lat,p.lng],{icon:icons[p.color||"red"], draggable})
                     .addTo(map)
-                    .bindPopup(()=> {
-                      let html = `${p.name}<br>± ${(p.accuracy/1000).toFixed(2)} km`;
-                      if(p.photo) html += `<br><img src="${p.photo}" width="100">`;
-                      if(draggable) html += `<br><button onclick="deleteMarker('${p.name}')">Supprimer</button>`;
-                      return html;
-                    });
+                    .bindPopup(html);
 
     if(draggable){
-      marker.on('dragend', e=>{
+      marker.on("dragend", e=>{
         const pos = e.target.getLatLng();
-        sendPosition(pos.lat, pos.lng, p.name, p.color, p.accuracy, p.photo);
+        sendPosition(pos.lat,pos.lng,p.name,p.color,p.accuracy,p.photo);
       });
     }
+
+    allMarkers.push(marker);
   });
 }
 
@@ -109,25 +107,25 @@ map.on("locationfound", e=>{
   if(!currentName || !currentColor) return;
 
   const acc = e.accuracy;
-  if(acc > MAX_ACCURACY){
-    warningBox.innerText = `❌ GPS trop imprécis (± ${(acc/1000).toFixed(2)} km)`;
-    warningBox.style.display = "block";
+  if(acc>MAX_ACCURACY){
+    warningBox.innerText=`❌ GPS trop imprécis (± ${(acc/1000).toFixed(2)} km)`;
+    warningBox.style.display="block";
     return;
   }
 
   showGpsInfo(acc);
 
   if(!currentMarker){
-    currentMarker = L.marker(e.latlng, {icon: icons[currentColor]})
+    currentMarker = L.marker(e.latlng,{icon:icons[currentColor]})
                      .addTo(map)
                      .bindPopup(`${currentName}<br>± ${(acc/1000).toFixed(2)} km`)
                      .openPopup();
-  } else{
+  } else {
     currentMarker.setLatLng(e.latlng);
     currentMarker.setPopupContent(`${currentName}<br>± ${(acc/1000).toFixed(2)} km`);
   }
 
-  sendPosition(e.latlng.lat, e.latlng.lng, currentName, currentColor, acc);
+  sendPosition(e.latlng.lat,e.latlng.lng,currentName,currentColor,acc);
 });
 
 // =====================
@@ -136,15 +134,15 @@ map.on("locationfound", e=>{
 document.getElementById("btn-sp").onclick = ()=>{
   const name = prompt("Nom SP :");
   if(!name) return;
-  currentName = name;
-  currentColor = "blue";
+  currentName=name;
+  currentColor="blue";
   startTracking();
   document.getElementById("role-popup").style.display="none";
 };
 
 document.getElementById("btn-vict").onclick = ()=>{
-  currentName = "VICT";
-  currentColor = "green";
+  currentName="VICT";
+  currentColor="green";
   startTracking();
   document.getElementById("role-popup").style.display="none";
 };
@@ -171,9 +169,8 @@ document.getElementById("login-cancel").onclick = ()=>{
 };
 
 document.getElementById("login-btn").onclick = ()=>{
-  const id = document.getElementById("login-id").value;
-  const pass = document.getElementById("login-pass").value;
-
+  const id=document.getElementById("login-id").value;
+  const pass=document.getElementById("login-pass").value;
   if(id==="SPALS" && pass==="ALS1924"){
     isAdmin=true;
     document.getElementById("login-popup").style.display="none";
@@ -190,7 +187,7 @@ document.getElementById("login-btn").onclick = ()=>{
 // POINT ROUGE AVEC PHOTO
 // =====================
 async function fileToBase64(file){
-  return new Promise((res, rej)=>{
+  return new Promise((res,rej)=>{
     const reader = new FileReader();
     reader.onload = ()=>res(reader.result);
     reader.onerror = e=>rej(e);
@@ -199,17 +196,16 @@ async function fileToBase64(file){
 }
 
 document.getElementById("red-add-btn").onclick = async ()=>{
-  const lat = parseFloat(document.getElementById("red-lat").value);
-  const lng = parseFloat(document.getElementById("red-lng").value);
-  const title = document.getElementById("red-title").value;
-  const photoFile = document.getElementById("red-photo").files[0];
+  const lat=parseFloat(document.getElementById("red-lat").value);
+  const lng=parseFloat(document.getElementById("red-lng").value);
+  const title=document.getElementById("red-title").value;
+  const photoFile=document.getElementById("red-photo").files[0];
+  if(isNaN(lat)||isNaN(lng)||!title){ alert("Champs invalides"); return; }
 
-  if(isNaN(lat) || isNaN(lng) || !title){ alert("Champs invalides"); return; }
-
-  let photoData = null;
+  let photoData=null;
   if(photoFile) photoData = await fileToBase64(photoFile);
 
-  sendPosition(lat, lng, title, "red", 0, photoData);
+  await sendPosition(lat,lng,title,"red",0,photoData);
   alert("Point rouge ajouté !");
   loadPositions();
 };
@@ -224,7 +220,7 @@ document.getElementById("red-close-btn").onclick = ()=>{
 window.deleteMarker = async function(name){
   if(!isAdmin) return alert("Seul Admin peut supprimer");
   if(!confirm(`Supprimer "${name}" ?`)) return;
-  const r = await fetch(`${webAppURL}?name=${encodeURIComponent(name)}`, {method: "DELETE"});
+  const r = await fetch(`${webAppURL}?name=${encodeURIComponent(name)}`,{method:"DELETE"});
   const text = await r.text();
   if(text==="OK"){
     alert("Supprimé !");
