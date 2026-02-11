@@ -56,12 +56,12 @@ function showGpsInfo(meters){
 async function sendPosition(lat, lng, name, color, accuracy, photo=null){
   await fetch(webAppURL, {
     method: "POST",
-    body: JSON.stringify({lat,lng,name,color,accuracy,photo})
+    body: JSON.stringify({lat, lng, name, color, accuracy, photo})
   });
 }
 
 // =====================
-// LOAD ALL POSITIONS
+// LOAD ALL POSITIONS (avec calques)
 // =====================
 async function loadPositions(){
   const r = await fetch(webAppURL);
@@ -72,10 +72,12 @@ async function loadPositions(){
     if(layer instanceof L.Marker && layer !== currentMarker) map.removeLayer(layer);
   });
 
+  // Vider les calques
+  Object.values(vehicleLayers).forEach(lg => lg.clearLayers());
+
   data.forEach(p => {
     const draggable = (p.color === "red" && isAdmin);
     const marker = L.marker([p.lat, p.lng], {icon: icons[p.color || "red"], draggable})
-      .addTo(map)
       .bindPopup(() => {
         let html = `${p.name}`;
         if(p.color === "blue" || p.color === "green") html += `<br>± ${(p.accuracy/1000).toFixed(2)} km`;
@@ -90,6 +92,14 @@ async function loadPositions(){
         const pos = e.target.getLatLng();
         sendPosition(pos.lat, pos.lng, p.name, p.color, p.accuracy, p.photo);
       });
+    }
+
+    // Ajouter le marker au bon calque si type défini
+    if(p.type && vehicleLayers[p.type]){
+      vehicleLayers[p.type].addLayer(marker);
+    } else {
+      // sinon on le met directement sur la carte
+      marker.addTo(map);
     }
   });
 }
@@ -120,11 +130,10 @@ map.on("locationfound", e => {
   showGpsInfo(acc);
 
   if(!currentMarker){
-    currentMarker = L.marker(e.latlng, {icon: icons[currentColor]})
-      .addTo(map)
+    currentMarker = L.marker(e.latlng, {icon: icons[currentColor]}).addTo(map)
       .bindPopup(`${currentName}<br>± ${(acc/1000).toFixed(2)} km`)
       .openPopup();
-  } else{
+  } else {
     currentMarker.setLatLng(e.latlng);
     currentMarker.setPopupContent(`${currentName}<br>± ${(acc/1000).toFixed(2)} km`);
   }
@@ -266,14 +275,6 @@ const vehicleLayers = {
   BALISE: L.layerGroup().addTo(map)
 };
 
-// Quand on charge les positions
-data.forEach(p => {
-  if(p.type && vehicleLayers[p.type]){
-    const marker = L.marker([p.lat, p.lng], {icon: icons.red}).bindPopup(p.name);
-    vehicleLayers[p.type].addLayer(marker);
-  }
-});
-
 // Filtrer selon le select
 document.getElementById("layer").addEventListener("change", () => {
   const selected = Array.from(document.getElementById("layer").selectedOptions).map(opt=>opt.value);
@@ -285,7 +286,6 @@ document.getElementById("layer").addEventListener("change", () => {
     }
   });
 });
-
 
 // =====================
 // INITIAL LOAD
