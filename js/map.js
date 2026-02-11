@@ -147,33 +147,56 @@ document.getElementById("btn-vict").onclick = ()=>{
 // =====================
 // ADMIN
 // =====================
-document.getElementById("btn-login").onclick = ()=>{ document.getElementById("login-popup").style.display="block"; };
-document.getElementById("login-cancel").onclick = ()=>{ document.getElementById("login-popup").style.display="none"; };
-document.getElementById("btn-admin").onclick = ()=>{ document.getElementById("login-popup").style.display="block"; };
 
-document.getElementById("login-btn").onclick = ()=>{
+const adminIndicator = document.getElementById("admin-indicator");
+
+document.getElementById("btn-admin").onclick = () => {
+
+  // SI déjà connecté → déconnexion
+  if(isAdmin){
+    isAdmin = false;
+
+    adminIndicator.style.display = "none";
+    document.getElementById("red-popup").style.display = "none";
+
+    alert("Déconnecté du mode Admin");
+
+    // Recharger les marqueurs sans droits admin
+    loadPositions(SHEET_POS_NAME);
+    loadPositions(SHEET_RED_NAME);
+
+    return;
+  }
+
+  // Sinon → afficher popup login
+  document.getElementById("login-popup").style.display = "block";
+};
+
+document.getElementById("login-cancel").onclick = () => {
+  document.getElementById("login-popup").style.display = "none";
+};
+
+document.getElementById("login-btn").onclick = () => {
+
   const id = document.getElementById("login-id").value;
   const pass = document.getElementById("login-pass").value;
+
   if(id === "SPALS" && pass === "ALS1924"){
+
     isAdmin = true;
 
-    // 1️⃣ Masquer la popup login
     document.getElementById("login-popup").style.display = "none";
-
-    // 2️⃣ Afficher message admin connecté
-    document.getElementById("admin-status").style.display = "block";
-
-    // 3️⃣ Afficher le formulaire de points rouges
     document.getElementById("red-popup").style.display = "block";
 
-    // 4️⃣ Recharger les positions SP/VICT et rouges
-    loadPositions(SHEET_RED_NAME);
-    loadPositions(SHEET_POS_NAME);
+    adminIndicator.style.display = "block";
 
-    // 5️⃣ Optionnel: masquer le bouton Admin
-    document.getElementById("btn-admin").style.display = "none";
+    alert("Connexion Admin réussie");
+
+    // Recharge avec droits admin
+    loadPositions(SHEET_POS_NAME);
+    loadPositions(SHEET_RED_NAME);
+
   } else {
-    // Afficher message erreur
     document.getElementById("login-error").style.display = "block";
   }
 };
