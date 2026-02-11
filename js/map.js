@@ -263,29 +263,85 @@ window.deleteMarker = async function(name){
 // =====================
 // AFFICHAGE CALQUES
 // =====================
+
 // Layer groups pour chaque type
 const vehicleLayers = {
-  PIETON: L.layerGroup().addTo(map),
-  VLI: L.layerGroup().addTo(map),
-  VLTT: L.layerGroup().addTo(map),
-  VSAV: L.layerGroup().addTo(map),
-  CTU: L.layerGroup().addTo(map),
-  FPT: L.layerGroup().addTo(map),
-  CCF: L.layerGroup().addTo(map),
-  BALISE: L.layerGroup().addTo(map)
+  PIETON: L.layerGroup(),
+  VLI: L.layerGroup(),
+  VLTT: L.layerGroup(),
+  VSAV: L.layerGroup(),
+  CTU: L.layerGroup(),
+  FPT: L.layerGroup(),
+  CCF: L.layerGroup(),
+  BALISE: L.layerGroup()
 };
 
-// Filtrer selon le select
-document.getElementById("layer").addEventListener("change", () => {
-  const selected = Array.from(document.getElementById("layer").selectedOptions).map(opt=>opt.value);
-  Object.keys(vehicleLayers).forEach(type => {
-    if(selected.includes(type)){
-      vehicleLayers[type].addTo(map);
+// Quand on charge les positions
+async function loadPositions(){
+  const r = await fetch(webAppURL);
+  const data = await r.json();
+
+  // Supprimer tous les markers sauf SP/VICT actuel
+  map.eachLayer(layer => {
+    if(layer instanceof L.Marker && layer !== currentMarker) map.removeLayer(layer);
+  });
+
+  // Vider les calques
+  Object.values(vehicleLayers).forEach(lg => lg.clearLayers());
+
+  data.forEach(p => {
+    const draggable = (p.color === "red" && isAdmin);
+    const marker = L.marker([p.lat, p.lng], {icon: icons[p.color || "red"], draggable})
+      .bindPopup(() => {
+        let html = `${p.name}`;
+        if(p.color === "blue" || p.color === "green") html += `<br>± ${(p.accuracy/1000).toFixed(2)} km`;
+        else html += `<br>Lat: ${p.lat.toFixed(5)}, Lng: ${p.lng.toFixed(5)}`;
+        if(p.photo) html += `<br><img src="${p.photo}" width="100">`;
+        if(draggable || isAdmin) html += `<br><button onclick="deleteMarker('${p.name}')">Supprimer</button>`;
+        return html;
+      });
+
+    if(draggable){
+      marker.on('dragend', e => {
+        const pos = e.target.getLatLng();
+        sendPosition(pos.lat, pos.lng, p.name, p.color, p.accuracy, p.photo);
+      });
+    }
+
+    // Ajouter le marker au bon calque si type défini
+    if(p.type && vehicleLayers[p.type]){
+      vehicleLayers[p.type].addLayer(marker);
     } else {
-      map.removeLayer(vehicleLayers[type]);
+      // sinon on le met directement sur la carte
+      marker.addTo(map);
     }
   });
-});
+
+  // Afficher les calques sélectionnés (après chargement des positions)
+  updateLayerVisibility();
+}
+
+// Filtrer selon le select
+document.getElementById("layer").addEventListener("change", updateLayerVisibility);
+
+function updateLayerVisibility() {
+  const selected = Array.from(document.getElementById("layer").selectedOptions).map(opt => opt.value);
+
+  // Ajouter ou retirer les calques de la carte selon la sélection
+  Object.keys(vehicleLayers).forEach(type => {
+    if (selected.includes(type)) {
+      map.addLayer(vehicleLayers[type]);  // Ajouter le calque à la carte
+    } else {
+      map.removeLayer(vehicleLayers[type]);  // Retirer le calque de la carte
+    }
+  });
+}
+
+// =====================
+// INITIAL LOAD
+// =====================
+loadPositions();
+
 
 // =====================
 // INITIAL LOAD
