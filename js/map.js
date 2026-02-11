@@ -292,15 +292,16 @@ selector.addEventListener("change", function() {
 
 function getColorForGPX(name){
   const colors = {
-    Pieton: "blue",
-    VLI: "green",
-    VLTT: "orange",
-    VSAV: "red",
-    CTU: "purple",
-    FPT: "yellow",
-    CCF: "pink"
+    Pieton: "#007bff",  // bleu vif
+    VLI: "#28a745",     // vert vif
+    VLTT: "#fd7e14",    // orange vif
+    VSAV: "#dc3545",    // rouge vif
+    CTU: "#6f42c1",     // violet vif
+    FPT: "#ffc107",     // jaune vif
+    CCF: "#e83e8c"      // rose vif
   };
-  return colors[name] || "gray";
+  return colors[name] || "#343a40"; // gris foncé si non défini
+
 }
 
 // =====================
