@@ -1,13 +1,7 @@
 // =====================
 // CONFIG
 // =====================
-const SHEET_POS_ID = "1XIQMBR1XS2b3nKYCWpLpZnJiIILnph68i8kSJ1Qg6B8"; // Feuille1 pour positions SP/VICT
-const SHEET_RED_ID = "1XIQMBR1XS2b3nKYCWpLpZnJiIILnph68i8kSJ1Qg6B8"; // Feuille2 pour points rouges
-const SHEET_POS_NAME = "Feuille1";
-const SHEET_RED_NAME = "Feuille2";
-const DRIVE_FOLDER_ID = "1RfdqaabDnpa6z09zn7i3HeToidogNqus";
-const webAppURL = "https://script.google.com/macros/s/AKfycbyL1UEksrwPqFJOdkZxDg9YriQkqskM7K3uGlANwrOPeGhE5IADsXA1G3CWGnHUCfeS/exec"; 
-
+const webAppURL = "https://script.google.com/macros/s/YOUR_SCRIPT_ID/exec"; // remplacer par ton URL de webapp
 const MAX_ACCURACY = 10000; // 10 km
 const TRACK_INTERVAL = 5000; // 5s
 
@@ -32,9 +26,9 @@ function createIcon(color){
 }
 
 const icons = {
-  blue:createIcon("blue"),
-  green:createIcon("green"),
-  red:createIcon("red")
+  blue: createIcon("blue"),
+  green: createIcon("green"),
+  red: createIcon("red")
 };
 
 // =====================
@@ -57,38 +51,45 @@ function showGpsInfo(meters){
 }
 
 // =====================
-// FETCH GOOGLE SHEET
+// SEND POSITION (POST JSON)
 // =====================
-async function sendPosition(lat,lng,name,color,accuracy,photo=null,sheet=SHEET_POS_NAME){
-  await fetch(webAppURL,{
-    method:"POST",
-    body:JSON.stringify({lat,lng,name,color,accuracy,photo,sheet})
+async function sendPosition(lat, lng, name, color, accuracy, photo=null){
+  await fetch(webAppURL, {
+    method: "POST",
+    body: JSON.stringify({lat,lng,name,color,accuracy,photo})
   });
 }
 
-async function loadPositions(sheet=SHEET_POS_NAME){
-  const r = await fetch(`${webAppURL}?sheet=${sheet}`);
+// =====================
+// LOAD ALL POSITIONS
+// =====================
+async function loadPositions(){
+  const r = await fetch(webAppURL);
   const data = await r.json();
-  const markers = [];
+
+  // Supprimer anciens markers si besoin
+  map.eachLayer(layer=>{
+    if(layer instanceof L.Marker && layer!==currentMarker) map.removeLayer(layer);
+  });
+
   data.forEach(p=>{
-    const draggable = p.color==='red' && isAdmin;
-    const marker = L.marker([p.lat,p.lng],{icon:icons[p.color],draggable})
-      .addTo(map)
-      .bindPopup(()=>{
-        let html = `${p.name}<br>± ${(p.accuracy/1000).toFixed(2)} km`;
-        if(p.photo) html += `<br><img src="${p.photo}" width="100">`;
-        if(isAdmin) html += `<br><button onclick="deleteMarker('${p.name}','${sheet}')">Supprimer</button>`;
-        return html;
-      });
+    const draggable = (p.color === "red" && isAdmin);
+    const marker = L.marker([p.lat, p.lng], {icon: icons[p.color || "red"], draggable})
+                    .addTo(map)
+                    .bindPopup(()=> {
+                      let html = `${p.name}<br>± ${(p.accuracy/1000).toFixed(2)} km`;
+                      if(p.photo) html += `<br><img src="${p.photo}" width="100">`;
+                      if(draggable) html += `<br><button onclick="deleteMarker('${p.name}')">Supprimer</button>`;
+                      return html;
+                    });
+
     if(draggable){
-      marker.on('dragend',e=>{
+      marker.on('dragend', e=>{
         const pos = e.target.getLatLng();
-        sendPosition(pos.lat,pos.lng,p.name,p.color,p.accuracy,p.photo,sheet);
+        sendPosition(pos.lat, pos.lng, p.name, p.color, p.accuracy, p.photo);
       });
     }
-    markers.push(marker);
   });
-  return markers;
 }
 
 // =====================
@@ -97,184 +98,141 @@ async function loadPositions(sheet=SHEET_POS_NAME){
 function startTracking(){
   if(trackingTimer) clearInterval(trackingTimer);
   locateOnce();
-  trackingTimer = setInterval(locateOnce,TRACK_INTERVAL);
+  trackingTimer = setInterval(locateOnce, TRACK_INTERVAL);
 }
 
 function locateOnce(){
-  map.locate({enableHighAccuracy:true,maximumAge:0,timeout:15000});
+  map.locate({enableHighAccuracy:true, maximumAge:0, timeout:15000});
 }
 
 map.on("locationfound", e=>{
   if(!currentName || !currentColor) return;
+
   const acc = e.accuracy;
-  if(acc>MAX_ACCURACY){
+  if(acc > MAX_ACCURACY){
     warningBox.innerText = `❌ GPS trop imprécis (± ${(acc/1000).toFixed(2)} km)`;
-    warningBox.style.display="block";
+    warningBox.style.display = "block";
     return;
   }
+
   showGpsInfo(acc);
+
   if(!currentMarker){
-    currentMarker=L.marker(e.latlng,{icon:icons[currentColor]})
-      .addTo(map)
-      .bindPopup(`${currentName}<br>± ${(acc/1000).toFixed(2)} km`)
-      .openPopup();
+    currentMarker = L.marker(e.latlng, {icon: icons[currentColor]})
+                     .addTo(map)
+                     .bindPopup(`${currentName}<br>± ${(acc/1000).toFixed(2)} km`)
+                     .openPopup();
   } else{
     currentMarker.setLatLng(e.latlng);
     currentMarker.setPopupContent(`${currentName}<br>± ${(acc/1000).toFixed(2)} km`);
   }
-  sendPosition(e.latlng.lat,e.latlng.lng,currentName,currentColor,acc,SHEET_POS_NAME);
+
+  sendPosition(e.latlng.lat, e.latlng.lng, currentName, currentColor, acc);
 });
 
 // =====================
-// ROLES
+// ROLES SP / VICT
 // =====================
 document.getElementById("btn-sp").onclick = ()=>{
   const name = prompt("Nom SP :");
   if(!name) return;
-  currentName=name;
-  currentColor="blue";
+  currentName = name;
+  currentColor = "blue";
   startTracking();
   document.getElementById("role-popup").style.display="none";
 };
 
 document.getElementById("btn-vict").onclick = ()=>{
-  currentName="VICT";
-  currentColor="green";
+  currentName = "VICT";
+  currentColor = "green";
   startTracking();
   document.getElementById("role-popup").style.display="none";
 };
 
 // =====================
-// ADMIN
+// ADMIN LOGIN
 // =====================
-
 const adminIndicator = document.getElementById("admin-indicator");
 
-document.getElementById("btn-admin").onclick = () => {
-
-  // SI déjà connecté → déconnexion
+document.getElementById("btn-admin").onclick = ()=>{
   if(isAdmin){
-    isAdmin = false;
-
-    adminIndicator.style.display = "none";
-    document.getElementById("red-popup").style.display = "none";
-
+    isAdmin=false;
+    adminIndicator.style.display="none";
+    document.getElementById("red-popup").style.display="none";
     alert("Déconnecté du mode Admin");
-
-    // Recharger les marqueurs sans droits admin
-    loadPositions(SHEET_POS_NAME);
-    loadPositions(SHEET_RED_NAME);
-
+    loadPositions();
     return;
   }
-
-  // Sinon → afficher popup login
-  document.getElementById("login-popup").style.display = "block";
+  document.getElementById("login-popup").style.display="block";
 };
 
-document.getElementById("login-cancel").onclick = () => {
-  document.getElementById("login-popup").style.display = "none";
+document.getElementById("login-cancel").onclick = ()=>{
+  document.getElementById("login-popup").style.display="none";
 };
 
-document.getElementById("login-btn").onclick = () => {
-
+document.getElementById("login-btn").onclick = ()=>{
   const id = document.getElementById("login-id").value;
   const pass = document.getElementById("login-pass").value;
 
-  if(id === "SPALS" && pass === "ALS1924"){
-
-    isAdmin = true;
-
-    document.getElementById("login-popup").style.display = "none";
-    document.getElementById("red-popup").style.display = "block";
-
-    adminIndicator.style.display = "block";
-
+  if(id==="SPALS" && pass==="ALS1924"){
+    isAdmin=true;
+    document.getElementById("login-popup").style.display="none";
+    document.getElementById("red-popup").style.display="block";
+    adminIndicator.style.display="block";
     alert("Connexion Admin réussie");
-
-    // Recharge avec droits admin
-    loadPositions(SHEET_POS_NAME);
-    loadPositions(SHEET_RED_NAME);
-
+    loadPositions();
   } else {
-    document.getElementById("login-error").style.display = "block";
+    document.getElementById("login-error").style.display="block";
   }
 };
 
 // =====================
-// POINT ROUGE
+// POINT ROUGE AVEC PHOTO
 // =====================
 async function fileToBase64(file){
-  return new Promise((res,rej)=>{
-    const reader=new FileReader();
-    reader.onload=()=>res(reader.result);
-    reader.onerror=e=>rej(e);
+  return new Promise((res, rej)=>{
+    const reader = new FileReader();
+    reader.onload = ()=>res(reader.result);
+    reader.onerror = e=>rej(e);
     reader.readAsDataURL(file);
   });
 }
 
 document.getElementById("red-add-btn").onclick = async ()=>{
-  const lat=parseFloat(document.getElementById("red-lat").value);
-  const lng=parseFloat(document.getElementById("red-lng").value);
-  const title=document.getElementById("red-title").value;
-  const photoFile=document.getElementById("red-photo").files[0];
-  if(isNaN(lat)||isNaN(lng)||!title){ alert("Champs invalides"); return; }
+  const lat = parseFloat(document.getElementById("red-lat").value);
+  const lng = parseFloat(document.getElementById("red-lng").value);
+  const title = document.getElementById("red-title").value;
+  const photoFile = document.getElementById("red-photo").files[0];
 
-  let photoData=null;
+  if(isNaN(lat) || isNaN(lng) || !title){ alert("Champs invalides"); return; }
+
+  let photoData = null;
   if(photoFile) photoData = await fileToBase64(photoFile);
 
-  sendPosition(lat,lng,title,'red',0,photoData,SHEET_RED_NAME);
+  sendPosition(lat, lng, title, "red", 0, photoData);
   alert("Point rouge ajouté !");
-  loadPositions(SHEET_RED_NAME);
+  loadPositions();
 };
 
-document.getElementById("red-close-btn").onclick = ()=>{ document.getElementById("red-popup").style.display="none"; };
-
-// POINT ROUGE MANUEL
-document.getElementById("add-red-marker").onclick = ()=>{
-  const lat=parseFloat(document.getElementById("lat-input").value);
-  const lng=parseFloat(document.getElementById("lng-input").value);
-  const name=document.getElementById("red-name").value;
-  if(isNaN(lat)||isNaN(lng)||!name){ alert("Champs invalides"); return; }
-  L.marker([lat,lng],{icon:icons.red}).addTo(map).bindPopup(name);
-  sendPosition(lat,lng,name,"red",0,null,SHEET_RED_NAME);
+document.getElementById("red-close-btn").onclick = ()=>{
+  document.getElementById("red-popup").style.display="none";
 };
-
-// =====================
-// GPX MULTI-CALQUES
-// =====================
-const gpxLayers={};
-const selector=document.getElementById("layer");
-selector.addEventListener("change",()=>{
-  const selected=Array.from(selector.selectedOptions).map(o=>o.value);
-  Object.keys(gpxLayers).forEach(k=>{
-    if(!selected.includes(k)) map.removeLayer(gpxLayers[k]);
-  });
-  selected.forEach(name=>{
-    if(name==='BALISE'){
-      loadPositions(SHEET_RED_NAME);
-    } else if(!gpxLayers[name]){
-      gpxLayers[name]=new L.GPX(`gpx/${name}.gpx`,{
-        async:true,
-        polyline_options:{color:getColor(name),weight:4,opacity:0.7}
-      }).addTo(map);
-    } else map.addLayer(gpxLayers[name]);
-  });
-});
-
-function getColor(name){
-  const colors={PIETON:"orange",VLI:"blue",VLTT:"green",VSAV:"red",CTU:"purple",FPT:"black",CCF:"brown"};
-  return colors[name]||"gray";
-}
 
 // =====================
 // SUPPRESSION MARKER
 // =====================
-window.deleteMarker=async function(name,sheet){
+window.deleteMarker = async function(name){
   if(!isAdmin) return alert("Seul Admin peut supprimer");
   if(!confirm(`Supprimer "${name}" ?`)) return;
-  const r=await fetch(`${webAppURL}?name=${encodeURIComponent(name)}&sheet=${sheet}`,{method:"DELETE"});
-  const text=await r.text();
-  if(text==="OK"){ alert("Supprimé !"); loadPositions(sheet); }
-  else alert("Introuvable");
+  const r = await fetch(`${webAppURL}?name=${encodeURIComponent(name)}`, {method: "DELETE"});
+  const text = await r.text();
+  if(text==="OK"){
+    alert("Supprimé !");
+    loadPositions();
+  } else alert("Introuvable");
 };
+
+// =====================
+// INITIAL LOAD
+// =====================
+loadPositions();
